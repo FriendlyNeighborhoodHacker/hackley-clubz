@@ -1,0 +1,24 @@
+# ===== Local configuration (contains secrets) =====
+config.local.php
+
+# ===== Application logs =====
+logs/
+*.log
+
+# ===== Image / file cache =====
+cache/
+
+# ===== Vim temporary files =====
+*.swp
+*.swo
+*.swn
+*~
+
+# ===== macOS =====
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# ===== PHP =====
+*.phar
