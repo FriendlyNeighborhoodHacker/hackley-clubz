@@ -108,6 +108,25 @@ final class Auth {
     }
 
     // -------------------------------------------------------------------------
+    // Admin gate
+    // -------------------------------------------------------------------------
+
+    /**
+     * Redirect non-admin users away with a flash error.
+     *
+     * Calls requireLogin() first, so unauthenticated visitors are sent to the
+     * login page rather than seeing a generic "no permission" message.
+     */
+    public static function requireAdmin(): void {
+        self::requireLogin();
+        $user = self::currentUser();
+        if (!$user || empty($user['is_admin'])) {
+            Flash::set('error', 'You do not have permission to access that page.');
+            redirect('/index.php');
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Deep-link redirect helper
     // -------------------------------------------------------------------------
 

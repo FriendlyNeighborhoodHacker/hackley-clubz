@@ -425,6 +425,22 @@ final class UserManagement {
     }
 
     /**
+     * Return a minimal list of all verified users, suitable for populating
+     * typeahead / select elements (e.g., admin log-page user filters).
+     *
+     * @return array[]  Each row has: id, first_name, last_name, email
+     */
+    public static function listAllForSelect(): array {
+        $st = pdo()->query(
+            'SELECT id, first_name, last_name, email
+             FROM users
+             WHERE email_verified_at IS NOT NULL
+             ORDER BY last_name, first_name, email'
+        );
+        return $st->fetchAll() ?: [];
+    }
+
+    /**
      * Find a user by their primary key.
      * Returns the full user row or null.
      */

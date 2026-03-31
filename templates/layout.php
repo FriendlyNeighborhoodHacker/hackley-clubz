@@ -107,7 +107,22 @@ $pageTitle     = isset($pageTitle) ? $pageTitle . ' — ' . $siteTitle : $siteTi
 
   <!-- ===== Club Panel (injected by club pages) ===== -->
   <aside class="club-panel" id="club-panel" aria-label="Club navigation">
-    <?php if (isset($clubPanelContent)) echo $clubPanelContent; ?>
+    <div class="club-panel-header">
+      <span class="club-panel-title">Clubs</span>
+      <button class="club-panel-toggle" id="club-panel-toggle"
+              title="Collapse panel" aria-label="Toggle club panel"
+              aria-expanded="true" aria-controls="club-panel-body">
+        <!-- Chevron left — rotates to point right when collapsed -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+    </div>
+    <div class="club-panel-body" id="club-panel-body">
+      <?php if (isset($clubPanelContent)) echo $clubPanelContent; ?>
+    </div>
   </aside>
 
   <!-- ===== Main Content ===== -->
@@ -119,6 +134,38 @@ $pageTitle     = isset($pageTitle) ? $pageTitle . ' — ' . $siteTitle : $siteTi
 </div><!-- .app-shell -->
 
 <?php if (isset($extraJs)) echo $extraJs; ?>
+
+<script>
+// ─── Club panel collapse/expand ───────────────────────────────────────────
+(function () {
+  const panel  = document.getElementById('club-panel');
+  const btn    = document.getElementById('club-panel-toggle');
+  const body   = document.getElementById('club-panel-body');
+  if (!panel || !btn) return;
+
+  const STORAGE_KEY = 'clubPanelCollapsed';
+
+  function setCollapsed(collapsed, animate) {
+    if (!animate) panel.style.transition = 'none';
+    panel.classList.toggle('collapsed', collapsed);
+    btn.setAttribute('aria-expanded', String(!collapsed));
+    btn.title = collapsed ? 'Expand panel' : 'Collapse panel';
+    localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
+    if (!animate) {
+      // Re-enable transitions after a tick
+      requestAnimationFrame(() => { panel.style.transition = ''; });
+    }
+  }
+
+  // Restore saved state on load (no animation)
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved === '1') setCollapsed(true, false);
+
+  btn.addEventListener('click', () => {
+    setCollapsed(!panel.classList.contains('collapsed'), true);
+  });
+})();
+</script>
 
 </body>
 </html>
