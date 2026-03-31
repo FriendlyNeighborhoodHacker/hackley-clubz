@@ -1,0 +1,606 @@
+/* ============================================================
+   Hackley Clubz — Application Stylesheet
+   
+   Font stack:
+     BD Megalona Extra Light  → titles, prompts, bold/italic emphasis
+     BB Noname Pro Regular    → body, UI text
+   
+   Color palette (change these variables to retheme):
+     --coral       vibrant coral/orange for primary CTAs
+     --purple-dark dark blue/purple gradient partner
+     --accent-blue #038BFF  "next" / primary action buttons
+   ============================================================ */
+
+/* ============================================================
+   0. Custom Fonts
+   ============================================================ */
+/* BD Megalona Extra Light — place font files in public/fonts/ */
+@font-face {
+  font-family: 'BD Megalona';
+  src: url('/public/fonts/BDMegalona-ExtraLight.woff2') format('woff2'),
+       url('/public/fonts/BDMegalona-ExtraLight.woff')  format('woff');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* BB Noname Pro Regular */
+@font-face {
+  font-family: 'BB Noname Pro';
+  src: url('/public/fonts/BBNonamePro-Regular.woff2') format('woff2'),
+       url('/public/fonts/BBNonamePro-Regular.woff')  format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================================
+   1. CSS Custom Properties (Design Tokens)
+   ============================================================ */
+:root {
+  /* Brand palette */
+  --coral:          #FF6B47;
+  --coral-light:    #FF8E72;
+  --purple-dark:    #2D1B69;
+  --purple-mid:     #4A2FA0;
+  --accent-blue:    #038BFF;
+  --accent-blue-hover: #0275d8;
+
+  /* Gradient (used for hero areas, splash) */
+  --gradient-brand: linear-gradient(135deg, var(--coral) 0%, var(--purple-dark) 100%);
+
+  /* UI neutrals */
+  --white:          #FFFFFF;
+  --bg:             #F8F8FA;
+  --surface:        #FFFFFF;
+  --border:         #E2E2E8;
+  --border-light:   #F0F0F5;
+
+  /* Text */
+  --text-primary:   #1A1A2E;
+  --text-secondary: #6B6B80;
+  --text-muted:     #9999AA;
+
+  /* Feedback */
+  --success:        #2ECC71;
+  --success-bg:     #EAFAF1;
+  --error:          #E74C3C;
+  --error-bg:       #FDEDEC;
+  --info:           #3498DB;
+  --info-bg:        #EBF5FB;
+
+  /* Pastel chat-bubble accents */
+  --bubble-sent:    #E8F4FD;
+  --bubble-recv:    #F5F0FF;
+
+  /* Typography */
+  --font-title:     'BD Megalona', Georgia, serif;
+  --font-body:      'BB Noname Pro', system-ui, -apple-system, sans-serif;
+
+  /* Spacing */
+  --radius:         12px;
+  --radius-sm:      8px;
+  --radius-lg:      20px;
+  --shadow:         0 2px 12px rgba(0,0,0,.08);
+  --shadow-md:      0 4px 24px rgba(0,0,0,.12);
+  --shadow-lg:      0 8px 40px rgba(0,0,0,.16);
+
+  /* Layout */
+  --sidebar-width:  68px;
+  --panel-width:    280px;
+}
+
+/* ============================================================
+   2. Reset / Base
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html { height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+img { display: block; max-width: 100%; }
+
+ul, ol { list-style: none; }
+
+/* ============================================================
+   3. Typography
+   ============================================================ */
+
+/* All headings use BD Megalona */
+h1, h2, h3, h4 {
+  font-family: var(--font-title);
+  font-weight: 200;
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.2rem; }
+
+/* Wizard prompts / page-question style */
+.prompt {
+  font-family: var(--font-title);
+  font-weight: 200;
+  font-size: 1.75rem;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+/* The "bold and italic" emphasis pattern: BD Megalona Extra Light, bold+italic */
+.prompt strong, .prompt em {
+  font-family: var(--font-title);
+  font-weight: 200;
+  font-style: italic;
+  color: var(--purple-dark);
+}
+
+/* ============================================================
+   4. Form Elements
+   ============================================================ */
+.form-group {
+  margin-bottom: 18px;
+}
+
+label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+textarea,
+select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--text-primary);
+  background: var(--surface);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="tel"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(3,139,255,.15);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* Password field wrapper (for eye toggle) */
+.input-wrapper {
+  position: relative;
+}
+.input-wrapper input {
+  padding-right: 44px;
+}
+.input-eye-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+.input-eye-btn:hover { color: var(--text-secondary); }
+
+/* ============================================================
+   5. Buttons
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 400;
+  cursor: pointer;
+  border: none;
+  transition: background .2s, transform .1s, box-shadow .2s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn:active { transform: scale(.98); }
+
+/* Primary "Next" / action button — always #038BFF */
+.btn-primary {
+  background: var(--accent-blue);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--accent-blue-hover);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(3,139,255,.35);
+}
+
+/* Secondary / ghost */
+.btn-secondary {
+  background: transparent;
+  color: var(--accent-blue);
+  border: 1.5px solid var(--accent-blue);
+}
+.btn-secondary:hover {
+  background: rgba(3,139,255,.06);
+  text-decoration: none;
+}
+
+/* Danger */
+.btn-danger {
+  background: var(--error);
+  color: #fff;
+}
+.btn-danger:hover {
+  background: #c0392b;
+  color: #fff;
+  text-decoration: none;
+}
+
+/* Full-width helper */
+.btn-block { width: 100%; }
+
+/* ============================================================
+   6. Flash / Alert Messages
+   ============================================================ */
+.flash {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.flash--success { background: var(--success-bg); color: #1a7a45; border-left: 4px solid var(--success); }
+.flash--error   { background: var(--error-bg);   color: #922b21; border-left: 4px solid var(--error); }
+.flash--info    { background: var(--info-bg);     color: #1a5276; border-left: 4px solid var(--info); }
+
+/* ============================================================
+   7. Splash / Login Screens
+   ============================================================ */
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--gradient-brand);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 40px;
+  text-align: center;
+}
+
+.splash-quote {
+  font-family: var(--font-title);
+  font-weight: 200;
+  font-style: italic;
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  color: #fff;
+  max-width: 520px;
+  opacity: 0;
+  transition: opacity .8s ease;
+}
+.splash-quote.visible { opacity: 1; }
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 40px;
+}
+
+.auth-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+.auth-logo img {
+  max-height: 56px;
+  max-width: 200px;
+  object-fit: contain;
+}
+.auth-logo .app-name {
+  font-family: var(--font-title);
+  font-weight: 200;
+  font-size: 1.75rem;
+  color: var(--purple-dark);
+  letter-spacing: .02em;
+}
+
+.auth-title {
+  font-family: var(--font-title);
+  font-weight: 200;
+  font-size: 1.5rem;
+  margin-bottom: 24px;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.auth-footer-links {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.auth-footer-links a {
+  color: var(--accent-blue);
+  margin: 0 8px;
+}
+
+/* ============================================================
+   8. Wizard / Step Indicator
+   ============================================================ */
+.wizard-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.wizard-step {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background .3s, transform .2s;
+}
+.wizard-step.active {
+  background: var(--accent-blue);
+  transform: scale(1.3);
+}
+.wizard-step.done {
+  background: var(--success);
+}
+
+.wizard-page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+/* ============================================================
+   9. App Shell (main authenticated layout)
+   ============================================================ */
+.app-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Left icon rail */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  gap: 8px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.sidebar-icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  transition: background .15s, color .15s;
+  text-decoration: none;
+  font-size: 20px;
+}
+.sidebar-icon-btn:hover,
+.sidebar-icon-btn.active {
+  background: var(--border-light);
+  color: var(--purple-dark);
+}
+
+.sidebar-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid var(--border);
+  transition: border-color .15s;
+}
+.sidebar-avatar:hover { border-color: var(--accent-blue); }
+
+.sidebar-spacer { flex: 1; }
+
+/* Club panel (left of content area) */
+.club-panel {
+  width: var(--panel-width);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  flex-shrink: 0;
+  padding: 20px 0;
+}
+
+/* Main content */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+}
+
+/* ============================================================
+   10. Profile Photo (circle avatar)
+   ============================================================ */
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+}
+.avatar-sm  { width: 32px;  height: 32px; }
+.avatar-md  { width: 48px;  height: 48px; }
+.avatar-lg  { width: 72px;  height: 72px; }
+.avatar-xl  { width: 120px; height: 120px; }
+
+/* Placeholder when no photo */
+.avatar-placeholder {
+  border-radius: 50%;
+  background: var(--gradient-brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-title);
+  font-weight: 200;
+  flex-shrink: 0;
+}
+.avatar-placeholder.avatar-sm  { width: 32px;  height: 32px;  font-size: 12px; }
+.avatar-placeholder.avatar-md  { width: 48px;  height: 48px;  font-size: 16px; }
+.avatar-placeholder.avatar-lg  { width: 72px;  height: 72px;  font-size: 24px; }
+.avatar-placeholder.avatar-xl  { width: 120px; height: 120px; font-size: 36px; }
+
+/* ============================================================
+   11. Photo Cropper (step 5 of wizard)
+   ============================================================ */
+.photo-crop-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto 24px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--border);
+  border: 2px solid var(--border);
+}
+.photo-crop-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.photo-upload-area:hover,
+.photo-upload-area.drag-over {
+  border-color: var(--accent-blue);
+  background: rgba(3,139,255,.04);
+}
+
+/* ============================================================
+   12. Page-level utility classes
+   ============================================================ */
+.text-center  { text-align: center; }
+.text-muted   { color: var(--text-muted); font-size: 0.875rem; }
+.mt-4  { margin-top: 16px; }
+.mt-6  { margin-top: 24px; }
+.mt-8  { margin-top: 32px; }
+.mb-4  { margin-bottom: 16px; }
+.mb-6  { margin-bottom: 24px; }
+.gap-2 { gap: 8px; }
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 24px 0;
+}
+
+.skip-link {
+  display: block;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: 12px;
+}
+.skip-link:hover { color: var(--text-primary); }
+
+/* ============================================================
+   13. Responsive
+   ============================================================ */
+@media (max-width: 768px) {
+  .main-content { padding: 16px; }
+  .auth-card    { padding: 28px 20px; }
+  .wizard-page  { padding: 24px 16px; }
+
+  /* On mobile, club panel is hidden by default and slides in */
+  .club-panel {
+    position: fixed;
+    left: var(--sidebar-width);
+    top: 0;
+    bottom: 0;
+    transform: translateX(-110%);
+    transition: transform .3s ease;
+    z-index: 20;
+    box-shadow: var(--shadow-md);
+  }
+  .club-panel.open {
+    transform: translateX(0);
+  }
+}
