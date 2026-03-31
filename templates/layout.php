@@ -79,16 +79,17 @@ $pageTitle     = isset($pageTitle) ? $pageTitle . ' — ' . $siteTitle : $siteTi
     </a>
 
     <?php if ($currentUser && !empty($currentUser['is_admin'])): ?>
-    <!-- Admin (app admin only) -->
-    <a href="/admin/settings.php"
-       class="sidebar-icon-btn <?= $activeSidebar === 'admin' ? 'active' : '' ?>"
-       title="App Admin" aria-label="App Admin">
+    <!-- Admin toggle button (app admin only) -->
+    <button id="admin-panel-btn"
+            class="sidebar-icon-btn"
+            title="Admin Menu" aria-label="Toggle Admin Menu"
+            aria-expanded="false" aria-controls="admin-panel">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"/>
         <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
         <path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>
       </svg>
-    </a>
+    </button>
     <?php endif; ?>
 
     <!-- Profile photo / avatar -->
@@ -104,6 +105,38 @@ $pageTitle     = isset($pageTitle) ? $pageTitle . ' — ' . $siteTitle : $siteTi
     </a>
 
   </nav>
+
+  <?php if ($currentUser && !empty($currentUser['is_admin'])): ?>
+  <!-- ===== Admin Panel ===== -->
+  <aside class="admin-panel panel-hidden" id="admin-panel" aria-label="Admin navigation">
+    <div class="club-panel-header">
+      <span class="club-panel-title">Admin</span>
+      <button class="club-panel-toggle" id="admin-panel-close"
+              title="Close admin menu" aria-label="Close admin menu">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="admin-panel-nav">
+      <a href="/admin/settings.php"     class="admin-panel-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+        Settings
+      </a>
+      <a href="/admin/activity_log.php" class="admin-panel-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Activity Log
+      </a>
+      <a href="/admin/email_log.php"    class="admin-panel-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Email Log
+      </a>
+    </nav>
+  </aside>
+  <?php endif; ?>
 
   <!-- ===== Club Panel (injected by club pages) ===== -->
   <aside class="club-panel" id="club-panel" aria-label="Club navigation">
@@ -138,9 +171,8 @@ $pageTitle     = isset($pageTitle) ? $pageTitle . ' — ' . $siteTitle : $siteTi
 <script>
 // ─── Club panel collapse/expand ───────────────────────────────────────────
 (function () {
-  const panel  = document.getElementById('club-panel');
-  const btn    = document.getElementById('club-panel-toggle');
-  const body   = document.getElementById('club-panel-body');
+  const panel = document.getElementById('club-panel');
+  const btn   = document.getElementById('club-panel-toggle');
   if (!panel || !btn) return;
 
   const STORAGE_KEY = 'clubPanelCollapsed';
@@ -152,18 +184,62 @@ $pageTitle     = isset($pageTitle) ? $pageTitle . ' — ' . $siteTitle : $siteTi
     btn.title = collapsed ? 'Expand panel' : 'Collapse panel';
     localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
     if (!animate) {
-      // Re-enable transitions after a tick
       requestAnimationFrame(() => { panel.style.transition = ''; });
     }
   }
 
-  // Restore saved state on load (no animation)
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved === '1') setCollapsed(true, false);
 
   btn.addEventListener('click', () => {
     setCollapsed(!panel.classList.contains('collapsed'), true);
   });
+})();
+
+// ─── Admin panel toggle ────────────────────────────────────────────────────
+(function () {
+  const adminBtn   = document.getElementById('admin-panel-btn');
+  const closeBtn   = document.getElementById('admin-panel-close');
+  const adminPanel = document.getElementById('admin-panel');
+  const clubPanel  = document.getElementById('club-panel');
+  if (!adminBtn || !adminPanel) return;
+
+  const STORAGE_KEY = 'adminPanelOpen';
+
+  function openAdminPanel() {
+    // Hide the club panel while admin is showing
+    if (clubPanel) clubPanel.classList.add('panel-hidden');
+    adminPanel.classList.remove('panel-hidden');
+    adminBtn.classList.add('active');
+    adminBtn.setAttribute('aria-expanded', 'true');
+    localStorage.setItem(STORAGE_KEY, '1');
+  }
+
+  function closeAdminPanel() {
+    adminPanel.classList.add('panel-hidden');
+    // Restore club panel
+    if (clubPanel) clubPanel.classList.remove('panel-hidden');
+    adminBtn.classList.remove('active');
+    adminBtn.setAttribute('aria-expanded', 'false');
+    localStorage.setItem(STORAGE_KEY, '0');
+  }
+
+  // Restore saved state on load (no animation needed)
+  if (localStorage.getItem(STORAGE_KEY) === '1') {
+    openAdminPanel();
+  }
+
+  adminBtn.addEventListener('click', () => {
+    if (adminPanel.classList.contains('panel-hidden')) {
+      openAdminPanel();
+    } else {
+      closeAdminPanel();
+    }
+  });
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => closeAdminPanel());
+  }
 })();
 </script>
 
