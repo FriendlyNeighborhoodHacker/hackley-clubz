@@ -52,6 +52,7 @@ ob_start();
     <a href="/admin/settings.php" class="active">Settings</a>
     <a href="/admin/activity_log.php">Activity Log</a>
     <a href="/admin/email_log.php">Email Log</a>
+    <a href="/admin/users/index.php">Users</a>
   </div>
 
   <h2>App Settings</h2>

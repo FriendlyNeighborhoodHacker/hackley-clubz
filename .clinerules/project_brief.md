@@ -279,6 +279,19 @@ Clicking on the title or hero image of a card should open an event description p
 
 —---
 
+## Pages - Admin
+
+### Actiity Log
+
+### Settings
+
+### Email Log
+
+### User Management
+The user management lists all of the user of the system and allows the admin to click on them to edit their meta-data. 
+
+There should be a admin/users/edit.php page where an admin can go and edit the metadata for the user, and there should be actions like "Send Password Reset Email", "edit profile photo" (I want to use the same patterns that users use when edit an account to edit a profile photo and the other data too.)
+
 # Design Notes
 
 ## Colors.

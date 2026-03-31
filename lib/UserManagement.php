@@ -194,17 +194,31 @@ final class UserManagement {
     }
 
     /**
-     * Set (or replace) the user's profile photo.
+     * Set (or replace) a user's profile photo.
+     *
+     * An admin may update any user's photo by supplying $targetUserId.
+     * A non-admin may only update their own photo ($targetUserId must be null or equal to $ctx->id).
+     *
+     * @throws \RuntimeException on invalid file ID or authorisation failure
      */
-    public static function setProfilePhoto(UserContext $ctx, int $publicFileId): void {
+    public static function setProfilePhoto(UserContext $ctx, int $publicFileId, ?int $targetUserId = null): void {
         if ($publicFileId <= 0) throw new \RuntimeException('Invalid photo file ID.');
 
+        $targetUserId = $targetUserId ?? $ctx->id;
+
+        if ($targetUserId !== $ctx->id && !$ctx->admin) {
+            throw new \RuntimeException('You are not authorised to update this user\'s photo.');
+        }
+
         $st = pdo()->prepare('UPDATE users SET photo_public_file_id = :fid WHERE id = :id');
-        $st->bindValue(':fid', $publicFileId, \PDO::PARAM_INT);
-        $st->bindValue(':id',  $ctx->id,      \PDO::PARAM_INT);
+        $st->bindValue(':fid', $publicFileId,  \PDO::PARAM_INT);
+        $st->bindValue(':id',  $targetUserId,  \PDO::PARAM_INT);
         $st->execute();
 
-        ActivityLog::log($ctx, ActivityLog::ACTION_USER_UPDATE_PHOTO, ['photo_file_id' => $publicFileId]);
+        ActivityLog::log($ctx, ActivityLog::ACTION_USER_UPDATE_PHOTO, [
+            'photo_file_id'  => $publicFileId,
+            'target_user_id' => $targetUserId,
+        ]);
     }
 
     // -------------------------------------------------------------------------
@@ -425,6 +439,37 @@ final class UserManagement {
     }
 
     /**
+     * Return all users for the admin user-management list, newest first,
+     * with basic pagination. Includes unverified accounts.
+     *
+     * @return array[]  Full user row (minus password_hash)
+     */
+    public static function listAllUsers(int $limit = 50, int $offset = 0): array {
+        $limit  = max(1, min(500, $limit));
+        $offset = max(0, $offset);
+        $st = pdo()->prepare(
+            'SELECT id, email, first_name, last_name, phone, user_type, is_admin,
+                    email_verified_at, photo_public_file_id, created_at
+             FROM users
+             ORDER BY last_name, first_name, email
+             LIMIT :limit OFFSET :offset'
+        );
+        $st->bindValue(':limit',  $limit,  \PDO::PARAM_INT);
+        $st->bindValue(':offset', $offset, \PDO::PARAM_INT);
+        $st->execute();
+        return $st->fetchAll() ?: [];
+    }
+
+    /**
+     * Count all users (for pagination on the admin user list).
+     */
+    public static function countAllUsers(): int {
+        $st  = pdo()->query('SELECT COUNT(*) AS c FROM users');
+        $row = $st->fetch();
+        return (int)($row['c'] ?? 0);
+    }
+
+    /**
      * Return a minimal list of all verified users, suitable for populating
      * typeahead / select elements (e.g., admin log-page user filters).
      *
@@ -438,6 +483,46 @@ final class UserManagement {
              ORDER BY last_name, first_name, email'
         );
         return $st->fetchAll() ?: [];
+    }
+
+    // -------------------------------------------------------------------------
+    // Admin user deletion
+    // -------------------------------------------------------------------------
+
+    /**
+     * Permanently delete a user account and all their associated data.
+     *
+     * Safety rules enforced here:
+     *  - An admin may not delete their own account.
+     *  - The actor must be an app admin (checked via $ctx->admin).
+     *
+     * @throws \RuntimeException on authorisation failure or self-deletion attempt
+     */
+    public static function deleteUser(UserContext $ctx, int $targetUserId): void {
+        if (!$ctx->admin) {
+            throw new \RuntimeException('You are not authorised to delete users.');
+        }
+
+        if ($ctx->id === $targetUserId) {
+            throw new \RuntimeException('You cannot delete your own account.');
+        }
+
+        $user = self::findUserById($targetUserId);
+        if (!$user) {
+            throw new \RuntimeException('User not found.');
+        }
+
+        // Hard-delete the user row.
+        // Foreign-key ON DELETE CASCADE handles child rows (club_memberships,
+        // RSVPs, etc.) as they are added in future migrations.
+        $st = pdo()->prepare('DELETE FROM users WHERE id = :id');
+        $st->bindValue(':id', $targetUserId, \PDO::PARAM_INT);
+        $st->execute();
+
+        ActivityLog::log($ctx, 'admin_delete_user', [
+            'deleted_user_id'    => $targetUserId,
+            'deleted_user_email' => $user['email'] ?? '',
+        ]);
     }
 
     /**

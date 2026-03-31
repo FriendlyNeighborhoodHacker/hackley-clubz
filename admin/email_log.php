@@ -79,6 +79,7 @@ ob_start();
     <a href="/admin/settings.php">Settings</a>
     <a href="/admin/activity_log.php">Activity Log</a>
     <a href="/admin/email_log.php" class="active">Email Log</a>
+    <a href="/admin/users/index.php">Users</a>
   </div>
 
   <h2>Email Log</h2>
