@@ -32,11 +32,20 @@ $infoMsg  = Flash::get('info');
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login — <?= e($siteTitle) ?></title>
   <link rel="stylesheet" href="/public/css/app.css">
+  <style>
+    .splash-logo {
+      max-width: 220px;
+      width: 60%;
+      margin-bottom: 28px;
+      opacity: 0.92;
+    }
+  </style>
 </head>
 <body>
 
 <!-- ===== Splash quote screen (shown before login card fades in) ===== -->
 <div class="splash-screen" id="splashScreen" aria-hidden="true">
+  <img src="/images/logo.png" alt="<?= e($siteTitle) ?>" class="splash-logo">
   <div class="splash-quote" id="splashQuote"></div>
 </div>
 
