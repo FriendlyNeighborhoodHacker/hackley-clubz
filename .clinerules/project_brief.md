@@ -328,11 +328,28 @@ profile/edit_eval.php
 profile/edit_picture.php
 conversations/… (but we won’t do this now)
 
+## Database Writes
 
+Database writes should only happen in methods of classes that are object management classes.  The public methods on these classes should take a "UserContext" object, which should specify the user id, whether they're an admin or not, and whether they're logged in via super.
 
+There should be a UserContext class that exposes the method:
+UserContext::getLoggedInUserContext()
+... which should return a user context object that can be passed to these functions.
 
+The UserContext is important because all writes to the database should also write to the ActivityLog, and the ActivityLog will need this information.
 
+## Template files to learn best practices from
 
+I have copied the following files as templates / best practices from another 
+application that works well into dev_notes/
+
+dev_notes/lib/ActivityLog.php
+dev_notes/lib/Application.php
+dev_notes/lib/EmailLog.php
+dev_notes/lib/Files.php
+dev_notes/lib/mailer.php
+dev_notes/lib/UserContext.php
+dev_notes/config.local.php.example
 
 ## Images
 1. There should be an "images" table in the database which stores blobs of data by id.
