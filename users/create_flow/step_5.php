@@ -81,12 +81,13 @@ $firstName  = $user['first_name'] ?? '';
       <?php endif; ?>
     </div>
 
-    <!-- Step indicator (step 4 of 4) -->
-    <div class="wizard-steps" aria-label="Step 4 of 4">
+    <!-- Step indicator (step 4 of 5) -->
+    <div class="wizard-steps" aria-label="Step 4 of 5">
       <div class="wizard-step done"   title="Step 1: Email"></div>
       <div class="wizard-step done"   title="Step 2: Password"></div>
       <div class="wizard-step done"   title="Step 3: Your name"></div>
       <div class="wizard-step active" title="Step 4: Profile photo"></div>
+      <div class="wizard-step"        title="Step 5: Phone number"></div>
     </div>
 
     <?php if ($firstName !== ''): ?>
@@ -145,7 +146,7 @@ $firstName  = $user['first_name'] ?? '';
       </button>
     </form>
 
-    <a href="/index.php" class="skip-link mt-4">Skip for now →</a>
+    <a href="/users/create_flow/step_6.php" class="skip-link mt-4">Skip for now →</a>
 
   </div>
 </div>

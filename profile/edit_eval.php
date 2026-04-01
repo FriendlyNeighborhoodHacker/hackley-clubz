@@ -26,10 +26,19 @@ try {
 
 $ctx = \UserContext::getLoggedInUserContext();
 
+// Build phone value from country code + local number
+$countryCode      = trim($_POST['country_code'] ?? '');
+$phoneLocal       = trim($_POST['phone_local']  ?? '');
+$phoneLocalDigits = preg_replace('/\D/', '', $phoneLocal);
+$phone            = ($phoneLocalDigits !== '' && $countryCode !== '')
+    ? trim($countryCode . ' ' . $phoneLocal)
+    : '';   // blank = clear the phone number
+
 try {
     UserManagement::updateProfile($ctx, [
         'first_name' => trim($_POST['first_name'] ?? ''),
         'last_name'  => trim($_POST['last_name']  ?? ''),
+        'phone'      => $phone,
     ]);
 } catch (\RuntimeException $e) {
     Flash::set('error', $e->getMessage());

@@ -44,5 +44,4 @@ try {
     redirect('/users/create_flow/step_5.php');
 }
 
-Flash::set('success', 'Welcome to ' . \Settings::siteTitle() . '!');
-redirect('/index.php');
+redirect('/users/create_flow/step_6.php');

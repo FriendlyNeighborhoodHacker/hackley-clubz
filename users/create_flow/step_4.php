@@ -44,12 +44,13 @@ $user     = Auth::currentUser();
       <?php endif; ?>
     </div>
 
-    <!-- Step indicator (3 of 4 — email done, password done, name active, photo next) -->
-    <div class="wizard-steps" aria-label="Step 3 of 4">
+    <!-- Step indicator (step 3 of 5) -->
+    <div class="wizard-steps" aria-label="Step 3 of 5">
       <div class="wizard-step done"   title="Step 1: Email"></div>
       <div class="wizard-step done"   title="Step 2: Password"></div>
       <div class="wizard-step active" title="Step 3: Your name"></div>
       <div class="wizard-step"        title="Step 4: Profile photo"></div>
+      <div class="wizard-step"        title="Step 5: Phone number"></div>
     </div>
 
     <p class="prompt"><em>What is your name?</em></p>
