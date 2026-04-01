@@ -343,10 +343,14 @@ final class UserManagement {
         $email = strtolower(trim($email));
         $user  = self::findUserByEmail($email);
 
-        if (!$user || $user['email_verified_at'] === null) {
+        if (!$user) {
             // Don't reveal whether the address is registered
             return null;
         }
+
+        // Unverified accounts are allowed to reset their password — clicking the
+        // reset link proves inbox ownership, which is equivalent to email
+        // verification. The email will be auto-verified in resetPassword().
 
         $plainToken = bin2hex(random_bytes(32));
         $hmacKey    = defined('RESET_TOKEN_HMAC_KEY') ? RESET_TOKEN_HMAC_KEY : '';
@@ -406,9 +410,14 @@ final class UserManagement {
             throw new \RuntimeException('This password reset link is invalid or has expired.');
         }
 
+        $wasUnverified = ($user['email_verified_at'] === null);
+
+        // COALESCE ensures email_verified_at is set the first time — clicking a
+        // reset link proves inbox ownership, so we treat it as email verification.
         $st = pdo()->prepare(
             'UPDATE users
-             SET password_hash = :pw,
+             SET password_hash             = :pw,
+                 email_verified_at         = COALESCE(email_verified_at, NOW()),
                  password_reset_token_hash = NULL,
                  password_reset_expires_at = NULL
              WHERE id = :id'
@@ -419,6 +428,14 @@ final class UserManagement {
 
         $ctx = new UserContext((int)$user['id'], (bool)$user['is_admin']);
         ActivityLog::log($ctx, ActivityLog::ACTION_USER_PASSWORD_RESET, []);
+
+        if ($wasUnverified) {
+            // Also record the implicit email verification
+            ActivityLog::log($ctx, ActivityLog::ACTION_USER_VERIFY_EMAIL, [
+                'email'  => $user['email'],
+                'method' => 'password_reset_link',
+            ]);
+        }
     }
 
     // -------------------------------------------------------------------------
