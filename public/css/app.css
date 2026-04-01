@@ -870,7 +870,48 @@ textarea::placeholder {
 }
 
 /* ============================================================
-   15. Responsive
+   15. Club Browse / Discovery Page
+   ============================================================ */
+
+/* Vertical list of club cards */
+.club-browse-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.club-browse-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-light);
+  transition: background .15s;
+}
+
+.club-browse-card:last-child { border-bottom: none; }
+.club-browse-card:hover       { background: var(--bg); }
+
+.club-browse-photo-link {
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.club-browse-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.club-browse-action {
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   16. Responsive
    ============================================================ */
 @media (max-width: 768px) {
   .main-content { padding: 16px; }

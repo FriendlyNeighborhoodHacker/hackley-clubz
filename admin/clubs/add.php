@@ -78,13 +78,34 @@ ob_start();
       </div>
 
       <div class="form-group">
-        <label for="meets">Meeting time &amp; place</label>
-        <input type="text" id="meets" name="meets"
-               placeholder="e.g. Tuesdays 3:30pm, Room 214"
-               value="<?= e($_POST['meets'] ?? '') ?>">
-        <small style="color:var(--text-muted); font-size:12px; margin-top:4px; display:block;">
-          Free-form text shown to members in the club panel.
+        <label>Meeting Days</label>
+        <div style="display:flex; flex-wrap:wrap; gap:8px 20px; margin-top:6px;">
+          <?php
+            $selDays = [];
+            if (!empty($_POST['meeting_days'])) {
+                $selDays = array_flip(array_map('intval', (array)$_POST['meeting_days']));
+            }
+            for ($d = 1; $d <= 8; $d++):
+          ?>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;
+                           font-size:0.875rem; color:var(--text-primary); font-weight:400; margin:0;">
+              <input type="checkbox" name="meeting_days[]" value="<?= $d ?>"
+                     style="width:auto; padding:0;"
+                     <?= isset($selDays[$d]) ? 'checked' : '' ?>>
+              Day <?= $d ?>
+            </label>
+          <?php endfor; ?>
+        </div>
+        <small style="color:var(--text-muted); font-size:12px; margin-top:6px; display:block;">
+          Select the day(s) of the 8-day cycle when this club meets.
         </small>
+      </div>
+
+      <div class="form-group">
+        <label for="meeting_location">Meeting Location</label>
+        <input type="text" id="meeting_location" name="meeting_location"
+               placeholder="e.g. Room 214, Science Building"
+               value="<?= e($_POST['meeting_location'] ?? '') ?>">
       </div>
 
       <div class="form-group" style="display:flex; align-items:center; gap:10px;">

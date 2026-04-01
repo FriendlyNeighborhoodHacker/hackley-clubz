@@ -41,10 +41,11 @@ if (!$club) {
     redirect('/admin/clubs/index.php');
 }
 
-$name        = trim($_POST['name']        ?? '');
-$description = trim($_POST['description'] ?? '');
-$meets       = trim($_POST['meets']       ?? '');
-$isSecret    = !empty($_POST['is_secret']);
+$name            = trim($_POST['name']             ?? '');
+$description     = trim($_POST['description']      ?? '');
+$meetingDays     = implode(',', array_filter(array_map('intval', (array)($_POST['meeting_days'] ?? []))));
+$meetingLocation = trim($_POST['meeting_location'] ?? '');
+$isSecret        = !empty($_POST['is_secret']);
 $clearPhoto  = !empty($_POST['clear_photo']);
 $clearHero   = !empty($_POST['clear_hero']);
 
@@ -77,7 +78,8 @@ try {
         $clubId,
         $name,
         $description,
-        $meets,
+        $meetingDays,
+        $meetingLocation,
         $photoFileId,
         $heroFileId,
         $isSecret,

@@ -59,6 +59,122 @@ final class ClubManagement {
         return $row ?: null;
     }
 
+    /**
+     * Return a paginated, alphabetized list of all non-secret clubs.
+     * Includes member count and whether the given user is already a member.
+     *
+     * @param  string   $keyword  Optional keyword filter (matches name or description).
+     * @param  int[]    $days     Optional day filter; clubs must meet on at least one of these days.
+     * @return array[]
+     */
+    public static function listPublicClubsPaginated(
+        int    $limit,
+        int    $offset,
+        int    $forUserId = 0,
+        string $keyword   = '',
+        array  $days      = []
+    ): array {
+        [$where, $params] = self::buildPublicClubsWhere($keyword, $days);
+        $params[':uid'] = $forUserId;
+        $params[':lim'] = $limit;
+        $params[':off'] = $offset;
+
+        $sql = 'SELECT c.*,
+                    (SELECT COUNT(*) FROM club_memberships cm  WHERE cm.club_id  = c.id) AS member_count,
+                    (SELECT COUNT(*) FROM club_memberships cm2 WHERE cm2.club_id = c.id AND cm2.user_id = :uid) AS is_member
+                FROM clubs c
+                WHERE ' . $where . '
+                ORDER BY c.name
+                LIMIT :lim OFFSET :off';
+
+        $st = pdo()->prepare($sql);
+        foreach ($params as $k => $v) {
+            $type = in_array($k, [':uid', ':lim', ':off'], true) ? \PDO::PARAM_INT : \PDO::PARAM_STR;
+            $st->bindValue($k, is_int($v) ? $v : $v, $type);
+        }
+        $st->execute();
+        return $st->fetchAll() ?: [];
+    }
+
+    /**
+     * Total count of public (non-secret) clubs, optionally filtered.
+     *
+     * @param  string $keyword  Optional keyword filter.
+     * @param  int[]  $days     Optional day filter.
+     */
+    public static function countPublicClubs(string $keyword = '', array $days = []): int {
+        [$where, $params] = self::buildPublicClubsWhere($keyword, $days);
+        $sql = 'SELECT COUNT(*) AS c FROM clubs c WHERE ' . $where;
+        $st  = pdo()->prepare($sql);
+        foreach ($params as $k => $v) {
+            $st->bindValue($k, $v, \PDO::PARAM_STR);
+        }
+        $st->execute();
+        return (int)($st->fetch()['c'] ?? 0);
+    }
+
+    /**
+     * Build the shared WHERE clause + params for public club listing/counting.
+     *
+     * @param  string $keyword
+     * @param  int[]  $days
+     * @return array{0: string, 1: array<string,string>}
+     */
+    private static function buildPublicClubsWhere(string $keyword, array $days): array {
+        $conditions = ['c.is_secret = 0'];
+        $params     = [];
+
+        if ($keyword !== '') {
+            $conditions[]        = '(c.name LIKE :kw_name OR c.description LIKE :kw_desc)';
+            $params[':kw_name']  = '%' . $keyword . '%';
+            $params[':kw_desc']  = '%' . $keyword . '%';
+        }
+
+        if (!empty($days)) {
+            $dayParts = [];
+            foreach (array_values($days) as $i => $day) {
+                $key          = ':day' . $i;
+                $dayParts[]   = 'FIND_IN_SET(' . $key . ', c.meeting_days) > 0';
+                $params[$key] = (string)(int)$day;
+            }
+            $conditions[] = '(' . implode(' OR ', $dayParts) . ')';
+        }
+
+        return [implode(' AND ', $conditions), $params];
+    }
+
+    /**
+     * Return true if the given user is a member of the given club.
+     */
+    public static function isUserMember(int $userId, int $clubId): bool {
+        $st = pdo()->prepare(
+            'SELECT COUNT(*) AS c FROM club_memberships
+             WHERE user_id = :uid AND club_id = :cid'
+        );
+        $st->bindValue(':uid', $userId, \PDO::PARAM_INT);
+        $st->bindValue(':cid', $clubId, \PDO::PARAM_INT);
+        $st->execute();
+        return (int)($st->fetch()['c'] ?? 0) > 0;
+    }
+
+    /**
+     * Return all clubs a user is a member of, alphabetized.
+     *
+     * @return array[]
+     */
+    public static function listUserMemberships(int $userId): array {
+        $st = pdo()->prepare(
+            'SELECT c.*, cm.is_club_admin, cm.role, cm.notification_setting
+             FROM clubs c
+             JOIN club_memberships cm ON cm.club_id = c.id
+             WHERE cm.user_id = :uid
+             ORDER BY c.name'
+        );
+        $st->bindValue(':uid', $userId, \PDO::PARAM_INT);
+        $st->execute();
+        return $st->fetchAll() ?: [];
+    }
+
     // -------------------------------------------------------------------------
     // Writes
     // -------------------------------------------------------------------------
@@ -72,7 +188,8 @@ final class ClubManagement {
         UserContext $ctx,
         string      $name,
         string      $description,
-        string      $meets,
+        string      $meetingDays,
+        string      $meetingLocation,
         ?int        $photoFileId,
         ?int        $heroFileId,
         bool        $isSecret
@@ -88,12 +205,13 @@ final class ClubManagement {
 
         $st = pdo()->prepare(
             'INSERT INTO clubs
-               (name, description, meets, photo_public_file_id, hero_public_file_id, is_secret, created_at)
-             VALUES (:name, :desc, :meets, :photo, :hero, :secret, NOW())'
+               (name, description, meeting_days, meeting_location, photo_public_file_id, hero_public_file_id, is_secret, created_at)
+             VALUES (:name, :desc, :days, :location, :photo, :hero, :secret, NOW())'
         );
-        $st->bindValue(':name',   $name,                    \PDO::PARAM_STR);
-        $st->bindValue(':desc',   trim($description),       \PDO::PARAM_STR);
-        $st->bindValue(':meets',  trim($meets),             \PDO::PARAM_STR);
+        $st->bindValue(':name',     $name,                    \PDO::PARAM_STR);
+        $st->bindValue(':desc',     trim($description),       \PDO::PARAM_STR);
+        $st->bindValue(':days',     trim($meetingDays),       \PDO::PARAM_STR);
+        $st->bindValue(':location', trim($meetingLocation),   \PDO::PARAM_STR);
         $st->bindValue(':photo',  $photoFileId,
             $photoFileId !== null ? \PDO::PARAM_INT : \PDO::PARAM_NULL);
         $st->bindValue(':hero',   $heroFileId,
@@ -120,7 +238,8 @@ final class ClubManagement {
         int         $clubId,
         string      $name,
         string      $description,
-        string      $meets,
+        string      $meetingDays,
+        string      $meetingLocation,
         ?int        $photoFileId,
         ?int        $heroFileId,
         bool        $isSecret,
@@ -136,12 +255,13 @@ final class ClubManagement {
             throw new \RuntimeException('Club name is required.');
         }
 
-        $sets   = ['name = :name', 'description = :desc', 'meets = :meets', 'is_secret = :secret'];
+        $sets   = ['name = :name', 'description = :desc', 'meeting_days = :days', 'meeting_location = :location', 'is_secret = :secret'];
         $params = [
-            ':name'   => $name,
-            ':desc'   => trim($description),
-            ':meets'  => trim($meets),
-            ':secret' => $isSecret ? 1 : 0,
+            ':name'     => $name,
+            ':desc'     => trim($description),
+            ':days'     => trim($meetingDays),
+            ':location' => trim($meetingLocation),
+            ':secret'   => $isSecret ? 1 : 0,
         ];
 
         // Profile photo
@@ -169,6 +289,55 @@ final class ClubManagement {
         $st->execute();
 
         ActivityLog::log($ctx, 'club.update', ['club_id' => $clubId, 'name' => $name]);
+    }
+
+    /**
+     * Add the current user as a regular member of a club.
+     *
+     * @throws \RuntimeException if the user is already a member
+     */
+    public static function joinClub(UserContext $ctx, int $clubId): void {
+        if ($ctx->id === 0) {
+            throw new \RuntimeException('You must be logged in to join a club.');
+        }
+
+        if (self::isUserMember($ctx->id, $clubId)) {
+            throw new \RuntimeException('You are already a member of this club.');
+        }
+
+        $st = pdo()->prepare(
+            'INSERT INTO club_memberships (user_id, club_id, is_club_admin, role, notification_setting)
+             VALUES (:uid, :cid, 0, \'\', \'everything\')'
+        );
+        $st->bindValue(':uid', $ctx->id, \PDO::PARAM_INT);
+        $st->bindValue(':cid', $clubId,  \PDO::PARAM_INT);
+        $st->execute();
+
+        ActivityLog::log($ctx, 'club.join', ['club_id' => $clubId]);
+    }
+
+    /**
+     * Remove the current user's membership from a club.
+     *
+     * @throws \RuntimeException if the user is not a member
+     */
+    public static function leaveClub(UserContext $ctx, int $clubId): void {
+        if ($ctx->id === 0) {
+            throw new \RuntimeException('You must be logged in to leave a club.');
+        }
+
+        if (!self::isUserMember($ctx->id, $clubId)) {
+            throw new \RuntimeException('You are not a member of this club.');
+        }
+
+        $st = pdo()->prepare(
+            'DELETE FROM club_memberships WHERE user_id = :uid AND club_id = :cid'
+        );
+        $st->bindValue(':uid', $ctx->id, \PDO::PARAM_INT);
+        $st->bindValue(':cid', $clubId,  \PDO::PARAM_INT);
+        $st->execute();
+
+        ActivityLog::log($ctx, 'club.leave', ['club_id' => $clubId]);
     }
 
     /**

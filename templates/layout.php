@@ -19,6 +19,7 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../lib/Settings.php';
 require_once __DIR__ . '/../lib/Files.php';
+require_once __DIR__ . '/../lib/ClubManagement.php';
 
 $currentUser = Auth::currentUser();
 $siteTitle   = Settings::siteTitle();
@@ -40,6 +41,12 @@ if ($currentUser) {
     if ($initials === '') $initials = strtoupper(substr($currentUser['email'] ?? '', 0, 1));
 }
 
+// Load the current user's club memberships for the sidebar icons
+$userSidebarClubs = [];
+if ($currentUser) {
+    $userSidebarClubs = ClubManagement::listUserMemberships((int)$currentUser['id']);
+}
+
 $activeSidebar = $activeSidebar ?? '';
 $pageTitle     = isset($pageTitle) ? $pageTitle . ' — ' . $siteTitle : $siteTitle;
 $announcement  = trim((string)(Settings::get('announcement') ?? ''));
@@ -59,10 +66,39 @@ $announcement  = trim((string)(Settings::get('announcement') ?? ''));
   <!-- ===== Left Icon Sidebar ===== -->
   <nav class="sidebar" aria-label="Main navigation">
 
-    <!-- Club icons scroll area (populated by clubs feature) -->
+    <!-- Club icons — one per club the user has joined -->
     <div id="sidebar-clubs" class="sidebar-clubs">
-      <!-- Club profile photos injected here by clubs feature -->
+      <?php foreach ($userSidebarClubs as $sc): ?>
+        <?php
+          $scPhoto   = $sc['photo_public_file_id']
+              ? Files::profilePhotoUrl((int)$sc['photo_public_file_id'])
+              : '';
+          $scInitial = strtoupper(substr($sc['name'], 0, 1));
+        ?>
+        <a href="/clubs/view.php?id=<?= (int)$sc['id'] ?>"
+           class="sidebar-icon-btn"
+           title="<?= e($sc['name']) ?>"
+           style="padding:2px;">
+          <?php if ($scPhoto !== ''): ?>
+            <img src="<?= e($scPhoto) ?>" alt="<?= e($sc['name']) ?>" class="sidebar-avatar">
+          <?php else: ?>
+            <div class="avatar-placeholder avatar-sm"
+                 style="background:var(--gradient-brand);"><?= e($scInitial) ?></div>
+          <?php endif; ?>
+        </a>
+      <?php endforeach; ?>
     </div>
+
+    <!-- Browse / join clubs -->
+    <a href="/clubs/browse.php"
+       class="sidebar-icon-btn <?= $activeSidebar === 'browse-clubs' ? 'active' : '' ?>"
+       title="Browse &amp; Join Clubs" aria-label="Browse and join clubs">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5"  y1="12" x2="19" y2="12"/>
+      </svg>
+    </a>
 
     <div class="sidebar-spacer"></div>
 

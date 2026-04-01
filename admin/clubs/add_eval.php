@@ -28,10 +28,11 @@ try {
 
 $ctx = UserContext::getLoggedInUserContext();
 
-$name        = trim($_POST['name']        ?? '');
-$description = trim($_POST['description'] ?? '');
-$meets       = trim($_POST['meets']       ?? '');
-$isSecret    = !empty($_POST['is_secret']);
+$name            = trim($_POST['name']             ?? '');
+$description     = trim($_POST['description']      ?? '');
+$meetingDays     = implode(',', array_filter(array_map('intval', (array)($_POST['meeting_days'] ?? []))));
+$meetingLocation = trim($_POST['meeting_location'] ?? '');
+$isSecret        = !empty($_POST['is_secret']);
 
 // Validate
 if ($name === '') {
@@ -58,7 +59,8 @@ try {
         $ctx,
         $name,
         $description,
-        $meets,
+        $meetingDays,
+        $meetingLocation,
         $photoFileId,
         $heroFileId,
         $isSecret

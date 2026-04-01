@@ -123,7 +123,8 @@ CREATE TABLE clubs (
   id                  INT AUTO_INCREMENT PRIMARY KEY,
   name                VARCHAR(255) NOT NULL,
   description         TEXT DEFAULT NULL,
-  meets               VARCHAR(255) DEFAULT NULL,  -- e.g. "Tuesdays 3:30pm, Room 214"
+  meeting_days        VARCHAR(50)  DEFAULT NULL,  -- comma-separated 8-day-cycle day numbers, e.g. "1,3"
+  meeting_location    VARCHAR(255) DEFAULT NULL,  -- room / address free text
   photo_public_file_id INT NULL,
   hero_public_file_id  INT NULL,
   is_secret           TINYINT(1) NOT NULL DEFAULT 0,
