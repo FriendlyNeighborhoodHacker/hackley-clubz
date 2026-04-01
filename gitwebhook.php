@@ -38,7 +38,7 @@ if ($ref !== 'refs/heads/main') {
 
 // Optional extra check: verify repo full name
 $repo = $data['repository']['full_name'] ?? '';
-if ($repo !== 'YOUR_GITHUB_USERNAME/YOUR_REPO_NAME') {
+if ($repo !== 'FriendlyNeighborhoodHacker/hackley-clubz') {
     http_response_code(403);
     echo "Unexpected repository\n";
     exit;
@@ -47,7 +47,7 @@ if ($repo !== 'YOUR_GITHUB_USERNAME/YOUR_REPO_NAME') {
 // Run deploy script and capture output
 $output = [];
 $returnVar = 0;
-exec('/usr/local/bin/deploy-myapp.sh 2>&1', $output, $returnVar);
+exec('//home/lillydebate/deploy_hackleyclubz_org.sh 2>&1', $output, $returnVar);
 
 if ($returnVar !== 0) {
     http_response_code(500);
