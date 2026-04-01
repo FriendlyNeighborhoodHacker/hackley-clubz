@@ -27,23 +27,6 @@ if ($event !== 'push') {
     exit;
 }
 
-$data = json_decode($payload, true);
-$ref = $data['ref'] ?? '';
-
-if ($ref !== 'refs/heads/main') {
-    http_response_code(200);
-    echo "Ignored push to $ref\n";
-    exit;
-}
-
-// Optional extra check: verify repo full name
-$repo = $data['repository']['full_name'] ?? '';
-if ($repo !== 'FriendlyNeighborhoodHacker/hackley-clubz') {
-    http_response_code(403);
-    echo "Unexpected repository\n";
-    exit;
-}
-
 // Run deploy script and capture output
 $output = [];
 $returnVar = 0;
