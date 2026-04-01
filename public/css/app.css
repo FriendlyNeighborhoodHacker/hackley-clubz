@@ -296,6 +296,31 @@ textarea::placeholder {
 .flash--error   { background: var(--error-bg);   color: #922b21; border-left: 4px solid var(--error); }
 .flash--info    { background: var(--info-bg);     color: #1a5276; border-left: 4px solid var(--info); }
 
+/* ── Announcement banner (set via Admin → Settings) ────────────────────── */
+.announcement-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #fff5f0 0%, #fff0f8 100%);
+  border: 1px solid #f4a57a;
+  border-left: 4px solid var(--coral, #f4643c);
+  border-radius: var(--radius);
+  font-size: 0.925rem;
+  color: #7a2e10;
+  line-height: 1.5;
+}
+.announcement-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.announcement-text {
+  flex: 1;
+  white-space: pre-wrap;   /* preserve line breaks from the textarea */
+}
+
 /* ============================================================
    7. Splash / Login Screens
    ============================================================ */

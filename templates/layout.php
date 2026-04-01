@@ -42,6 +42,7 @@ if ($currentUser) {
 
 $activeSidebar = $activeSidebar ?? '';
 $pageTitle     = isset($pageTitle) ? $pageTitle . ' — ' . $siteTitle : $siteTitle;
+$announcement  = trim((string)(Settings::get('announcement') ?? ''));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -165,6 +166,12 @@ $pageTitle     = isset($pageTitle) ? $pageTitle . ' — ' . $siteTitle : $siteTi
   <!-- ===== Main Content ===== -->
   <main class="main-content" id="main-content">
     <?= Flash::render() ?>
+    <?php if ($announcement !== ''): ?>
+      <div class="announcement-banner" role="alert">
+        <span class="announcement-icon" aria-hidden="true">📢</span>
+        <span class="announcement-text"><?= e($announcement) ?></span>
+      </div>
+    <?php endif; ?>
     <?= $content ?? '' ?>
   </main>
 
