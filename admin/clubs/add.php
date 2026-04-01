@@ -182,9 +182,9 @@ ob_start();
       <input type="hidden" name="hero_data" id="heroDataHidden">
     </div>
 
-    <div style="display:flex; gap:12px;">
-      <button type="submit" class="btn btn-primary">Create Club</button>
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
       <a href="/admin/clubs/index.php" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary">Create Club</button>
     </div>
   </form>
 
