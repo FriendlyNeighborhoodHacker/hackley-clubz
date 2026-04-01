@@ -174,7 +174,16 @@ ob_start();
                   }
                 ?>
               </td>
-              <td><?= e($r['subject'] ?? '') ?></td>
+              <td>
+                <a href="/admin/email_view.php?id=<?= (int)$r['id'] ?>"
+                   style="color:var(--text-primary);text-decoration:none;">
+                  <?= e($r['subject'] ?? '') ?>
+                </a>
+                <a href="/admin/email_view.php?id=<?= (int)$r['id'] ?>"
+                   style="margin-left:8px;font-size:0.75rem;color:var(--accent-blue);white-space:nowrap;">
+                  View →
+                </a>
+              </td>
               <td>
                 <?php if (!empty($r['success'])): ?>
                   <span class="status-success">✓ Sent</span>
