@@ -6,6 +6,7 @@ require_once __DIR__ . '/../lib/Application.php';
 require_once __DIR__ . '/../lib/Auth.php';
 require_once __DIR__ . '/../lib/ActivityLog.php';
 require_once __DIR__ . '/../lib/UserManagement.php';
+require_once __DIR__ . '/../lib/AdminUI.php';
 
 Application::init();
 Auth::requireAdmin();
@@ -72,12 +73,7 @@ ob_start();
 ?>
 <div class="admin-page">
 
-  <div class="admin-subnav">
-    <a href="/admin/settings.php">Settings</a>
-    <a href="/admin/activity_log.php" class="active">Activity Log</a>
-    <a href="/admin/email_log.php">Email Log</a>
-    <a href="/admin/users/index.php">Users</a>
-  </div>
+  <?= AdminUI::adminSubnav('activity_log') ?>
 
   <h2>Activity Log</h2>
 
