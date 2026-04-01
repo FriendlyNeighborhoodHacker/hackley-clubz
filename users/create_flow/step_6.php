@@ -137,7 +137,7 @@ $countries = [
 
     <p class="prompt">
       <?php if ($firstName !== ''): ?>
-        <em>What's your number,</em> <?= e($firstName) ?>?
+        What's your <em>number,</em> <?= e($firstName) ?>?
       <?php else: ?>
         <em>What's your number?</em>
       <?php endif; ?>

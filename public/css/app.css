@@ -149,7 +149,7 @@ h3 { font-size: 1.2rem; }
 /* The "bold and italic" emphasis pattern: BD Megalona Extra Light, bold+italic */
 .prompt strong, .prompt em {
   font-family: var(--font-title);
-  font-weight: 200;
+  font-weight: bold;
   font-style: italic;
   color: var(--purple-dark);
 }

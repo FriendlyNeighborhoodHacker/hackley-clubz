@@ -91,7 +91,7 @@ $firstName  = $user['first_name'] ?? '';
     </div>
 
     <?php if ($firstName !== ''): ?>
-      <p class="prompt"><em>Add a profile photo,</em> <?= e($firstName) ?>.</p>
+      <p class="prompt">Add a <em>profile photo,</em> <?= e($firstName) ?>.</p>
     <?php else: ?>
       <p class="prompt"><em>Add a profile photo.</em></p>
     <?php endif; ?>

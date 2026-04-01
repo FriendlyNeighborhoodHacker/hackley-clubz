@@ -87,7 +87,7 @@ $errorMsg   = Flash::get('error');
       <?php endif; ?>
     </div>
 
-    <p class="prompt"><em>Choose a new password.</em></p>
+    <p class="prompt">Choose a new <em>password.</em></p>
 
     <?php if ($errorMsg): ?>
       <div class="flash flash--error mt-4"><?= e($errorMsg) ?></div>

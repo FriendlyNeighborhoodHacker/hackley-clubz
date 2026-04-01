@@ -53,7 +53,7 @@ $user     = Auth::currentUser();
       <div class="wizard-step"        title="Step 5: Phone number"></div>
     </div>
 
-    <p class="prompt"><em>What is your name?</em></p>
+    <p class="prompt">What is your <em>name?</em></p>
     <p class="text-muted mt-4" style="margin-bottom:20px;">Be yourself – we use real names on <?= e($siteTitle) ?>.</p>
 
     <?php if ($errorMsg): ?>

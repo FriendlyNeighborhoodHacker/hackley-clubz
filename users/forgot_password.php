@@ -45,7 +45,7 @@ $successMsg = Flash::get('success');
       <?php endif; ?>
     </div>
 
-    <h1 class="auth-title">Reset your password</h1>
+    <p class="prompt" style="text-align:center; margin-bottom:24px;">Reset your <em>password.</em></p>
 
     <?php if ($errorMsg): ?>
       <div class="flash flash--error"><?= e($errorMsg) ?></div>

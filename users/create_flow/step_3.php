@@ -56,7 +56,7 @@ $email      = $_SESSION['create_email'] ?? '';
       </svg>
     </div>
 
-    <p class="prompt" style="margin-bottom:16px;">You're <em>almost done.</em></p>
+    <p class="prompt" style="margin-bottom:16px;"><em>You're almost done!</em></p>
 
     <p style="color: var(--text-secondary); margin-bottom: 8px;">
       Please check your email and click on the verification link.

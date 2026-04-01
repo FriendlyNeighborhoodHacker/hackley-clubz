@@ -62,7 +62,7 @@ $infoMsg  = Flash::get('info');
       <?php endif; ?>
     </div>
 
-    <h1 class="auth-title">Welcome back</h1>
+    <p class="prompt" style="text-align:center; margin-bottom:24px;"><em>Welcome back!</em></p>
 
     <?php if ($errorMsg): ?>
       <div class="flash flash--error"><?= e($errorMsg) ?></div>

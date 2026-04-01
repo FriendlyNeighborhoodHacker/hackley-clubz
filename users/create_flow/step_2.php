@@ -67,7 +67,7 @@ $errorMsg = Flash::get('error');
       <div class="wizard-step"        title="Step 4: Profile photo"></div>
     </div>
 
-    <p class="prompt"><em>Enter a password:</em></p>
+    <p class="prompt">Enter a <em>password:</em></p>
     <p class="text-muted mt-4" style="margin-bottom:20px;">Setting up account for <strong><?= e($email) ?></strong></p>
 
     <?php if ($errorMsg): ?>
