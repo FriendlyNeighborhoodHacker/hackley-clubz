@@ -34,7 +34,7 @@ if (!$user) {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Reset Link Expired — <?= e($siteTitle) ?></title>
-      <link rel="stylesheet" href="/public/css/app.css">
+      <link rel="stylesheet" href="<?= Application::css_url() ?>">
     </head>
     <body>
     <div class="auth-page">
@@ -72,7 +72,7 @@ $errorMsg   = Flash::get('error');
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reset Password — <?= e($siteTitle) ?></title>
-  <link rel="stylesheet" href="/public/css/app.css">
+  <link rel="stylesheet" href="<?= Application::css_url() ?>">
 </head>
 <body>
 

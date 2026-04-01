@@ -408,6 +408,9 @@ Some of the files in the current system have if branches at their top which hand
 ## GET vs POST
 Web requests that don't modify data should generally be GET requests.  Web requests that modify persistent data (not logging to disk or traffic logging, but modifying important data in the database) should generally be POST requests.
 
+## cachebusting
+CSS and JS files should use a cachebusting technique so that updates get passed through.  Right now, the technique is to use the file modification time as a version strategy and append a querystring variable with the file modification time.
+
 ## On thoroughness
 
 Please make sure when you call a function that it actually exists.  Make sure that if you change something you consider all the implications of the change.
@@ -440,4 +443,3 @@ Features that we will not implement at first
 - Event deleted → RSVPs cascade delete
 - User leaves club → should not see future events
 - Admin removed → permissions revoked immediately
-

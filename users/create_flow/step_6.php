@@ -83,7 +83,7 @@ $countries = [
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>What's Your Number? — <?= e($siteTitle) ?></title>
-  <link rel="stylesheet" href="/public/css/app.css">
+  <link rel="stylesheet" href="<?= Application::css_url() ?>">
   <style>
     .phone-row { display:flex; gap:8px; align-items:stretch; }
     .phone-row input { flex:1; min-width:0; }

@@ -36,4 +36,24 @@ class Application {
             // Settings table may not exist yet on fresh installs — ignore.
         }
     }
+
+    /**
+     * Return the URL for the main stylesheet with a cache-busting timestamp.
+     * The timestamp is based on the file's last modification time, so any CSS
+     * updates will automatically force browsers to fetch the new version.
+     */
+    public static function css_url(): string {
+        static $url = null;
+        if ($url === null) {
+            $path = __DIR__ . '/../public/css/app.css';
+            if (file_exists($path)) {
+                $mtime = filemtime($path);
+                $url = '/public/css/app.css?v=' . $mtime;
+            } else {
+                // Fallback if file doesn't exist (e.g., during initial setup)
+                $url = '/public/css/app.css';
+            }
+        }
+        return $url;
+    }
 }

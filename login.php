@@ -31,7 +31,7 @@ $infoMsg  = Flash::get('info');
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login — <?= e($siteTitle) ?></title>
-  <link rel="stylesheet" href="/public/css/app.css">
+  <link rel="stylesheet" href="<?= Application::css_url() ?>">
   <style>
     .splash-logo {
       max-width: 220px;
