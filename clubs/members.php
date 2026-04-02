@@ -27,7 +27,10 @@ $ctx         = UserContext::getLoggedInUserContext();
 $isClubAdmin = ClubManagement::isUserClubAdmin($ctx->id, $clubId);
 $canManage   = $isClubAdmin || $ctx->admin;
 
-$members = ClubManagement::listClubMembers($clubId);
+$members  = ClubManagement::listClubMembers($clubId);
+$heroUrl  = $club['hero_public_file_id']
+    ? Files::publicFileUrl((int)$club['hero_public_file_id'])
+    : '';
 
 $pageTitle     = 'Members — ' . $club['name'];
 $activeSidebar = 'browse-clubs';
@@ -36,7 +39,7 @@ ob_start();
 ?>
 <div style="max-width:720px; margin:0 auto;">
 
-  <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
     <a href="/clubs/view.php?id=<?= $clubId ?>"
        style="color:var(--text-secondary); font-size:14px; text-decoration:none; flex-shrink:0;">
       ← <?= e($club['name']) ?>
@@ -48,6 +51,14 @@ ob_start();
       <?= count($members) ?> member<?= count($members) !== 1 ? 's' : '' ?>
     </div>
   </div>
+
+  <?php if ($heroUrl !== ''): ?>
+    <div style="margin-bottom:20px; border-radius:var(--radius); overflow:hidden;
+                aspect-ratio:3/1; background:var(--border);">
+      <img src="<?= e($heroUrl) ?>" alt="<?= e($club['name']) ?>"
+           style="width:100%; height:100%; object-fit:cover; display:block;">
+    </div>
+  <?php endif; ?>
 
   <?php if (empty($members)): ?>
     <p style="color:var(--text-muted); padding:32px 0; text-align:center;">No members yet.</p>

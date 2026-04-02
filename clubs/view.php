@@ -87,30 +87,20 @@ ob_start();
       </div>
     </div>
 
-    <!-- Join / Leave button -->
-    <div style="flex-shrink:0; margin-top:4px;">
-      <?php if ($isMember): ?>
-        <form method="POST" action="/clubs/leave_eval.php" style="margin:0;">
-          <?= csrf_input() ?>
-          <input type="hidden" name="club_id" value="<?= $clubId ?>">
-          <input type="hidden" name="return_to" value="/clubs/view.php?id=<?= $clubId ?>">
-          <button type="submit" class="btn btn-secondary"
-                  onclick="return confirm('Leave <?= e(addslashes($club['name'])) ?>?')">
-            Leave Club
-          </button>
-        </form>
-      <?php else: ?>
+    <!-- Join button (non-members only) -->
+    <?php if (!$isMember): ?>
+      <div style="flex-shrink:0; margin-top:4px;">
         <form method="POST" action="/clubs/join_eval.php" style="margin:0;">
           <?= csrf_input() ?>
           <input type="hidden" name="club_id" value="<?= $clubId ?>">
           <input type="hidden" name="return_to" value="/clubs/view.php?id=<?= $clubId ?>">
           <button type="submit" class="btn btn-primary">Join Club</button>
         </form>
-      <?php endif; ?>
-    </div>
+      </div>
+    <?php endif; ?>
 
-    <!-- Three-dot admin menu (club admins / app admins only) -->
-    <?php if ($canManage): ?>
+    <!-- Three-dot menu (members and admins) -->
+    <?php if ($isMember): ?>
     <div style="flex-shrink:0; margin-top:4px; position:relative;" id="club-admin-menu-wrap">
       <button type="button" id="club-admin-menu-btn"
               style="background:none; border:1.5px solid var(--border); border-radius:var(--radius-sm);
@@ -119,23 +109,36 @@ ob_start();
               onmouseenter="this.style.background='var(--border-light)';this.style.color='var(--purple-dark)'"
               onmouseleave="this.style.background='none';this.style.color='var(--text-secondary)'"
               onclick="toggleClubAdminMenu(event)"
-              title="Club admin menu"
-              aria-label="Club admin options">⋯</button>
+              title="Club menu"
+              aria-label="Club options">⋯</button>
       <div id="club-admin-menu"
            style="display:none; position:absolute; right:0; top:100%; margin-top:4px;
                   background:var(--surface); border:1px solid var(--border);
                   border-radius:var(--radius-sm); box-shadow:var(--shadow-md);
-                  min-width:160px; z-index:50; overflow:hidden;">
-        <a href="/clubs/settings.php?id=<?= $clubId ?>" class="admin-panel-link"
-           onclick="localStorage.setItem('adminPanelOpen','0')">
-          ⚙️ Settings
-        </a>
-        <a href="/clubs/members.php?id=<?= $clubId ?>" class="admin-panel-link"
-           onclick="localStorage.setItem('adminPanelOpen','0')">
-          👑 Members
-        </a>
+                  min-width:180px; z-index:50; overflow:hidden;">
+        <?php if ($canManage): ?>
+          <a href="/clubs/members.php?id=<?= $clubId ?>" class="admin-panel-link">
+            👑 Members
+          </a>
+          <a href="/clubs/settings.php?id=<?= $clubId ?>" class="admin-panel-link">
+            ⚙️ Settings
+          </a>
+          <div style="border-top:1px solid var(--border-light);"></div>
+        <?php endif; ?>
+        <button type="button" class="admin-panel-link"
+                style="width:100%; text-align:left; background:none; border:none; cursor:pointer;
+                       color:var(--error);"
+                onclick="if(confirm('Leave <?= e(addslashes($club['name'])) ?>?')) document.getElementById('leave-form').submit()">
+          🚪 Leave Club
+        </button>
       </div>
     </div>
+    <!-- Hidden leave form -->
+    <form id="leave-form" method="POST" action="/clubs/leave_eval.php" style="display:none;">
+      <?= csrf_input() ?>
+      <input type="hidden" name="club_id" value="<?= $clubId ?>">
+      <input type="hidden" name="return_to" value="/clubs/browse.php">
+    </form>
     <?php endif; ?>
   </div>
 

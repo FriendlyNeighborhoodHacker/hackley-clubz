@@ -75,6 +75,14 @@ ob_start();
 
 <div style="max-width:640px; margin:0 auto;">
 
+  <?php if ($heroUrl !== ''): ?>
+    <div style="margin-bottom:20px; border-radius:var(--radius); overflow:hidden;
+                aspect-ratio:3/1; background:var(--border);">
+      <img src="<?= e($heroUrl) ?>" alt="<?= e($club['name']) ?>"
+           style="width:100%; height:100%; object-fit:cover; display:block;">
+    </div>
+  <?php endif; ?>
+
   <div style="display:flex; align-items:center; gap:12px; margin-bottom:28px; flex-wrap:wrap;">
     <a href="/clubs/view.php?id=<?= $clubId ?>"
        style="color:var(--text-secondary); font-size:14px; text-decoration:none; flex-shrink:0;">

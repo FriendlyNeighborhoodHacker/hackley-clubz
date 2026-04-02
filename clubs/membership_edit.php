@@ -47,6 +47,10 @@ $isMemberAdmin = !empty($member['is_club_admin']);
 $isFaculty     = ($member['user_type'] ?? '') === 'adult';
 $isSelf        = ($ctx->id === $targetUserId);
 
+$heroUrl  = $club['hero_public_file_id']
+    ? Files::publicFileUrl((int)$club['hero_public_file_id'])
+    : '';
+
 $photoUrl = Files::profilePhotoUrl($member['photo_public_file_id'] ?? null);
 $initials  = strtoupper(
     substr($member['first_name'] ?? '', 0, 1) .
@@ -70,6 +74,14 @@ ob_start();
     <span style="margin:0 6px; color:var(--border);">·</span>
     <span style="color:var(--text-primary);"><?= e($fullName) ?></span>
   </div>
+
+  <?php if ($heroUrl !== ''): ?>
+    <div style="margin-bottom:20px; border-radius:var(--radius); overflow:hidden;
+                aspect-ratio:3/1; background:var(--border);">
+      <img src="<?= e($heroUrl) ?>" alt="<?= e($club['name']) ?>"
+           style="width:100%; height:100%; object-fit:cover; display:block;">
+    </div>
+  <?php endif; ?>
 
   <!-- Flash messages -->
   <?= Flash::render() ?>
