@@ -172,9 +172,9 @@ ob_start();
           <!-- Photo -->
           <a href="/clubs/view.php?id=<?= $clubId ?>" class="club-browse-photo-link" tabindex="-1" aria-hidden="true">
             <?php if ($photoUrl !== ''): ?>
-              <img src="<?= e($photoUrl) ?>" alt="" class="avatar" style="width:56px;height:56px;">
+              <img src="<?= e($photoUrl) ?>" alt="" class="avatar" style="width:60px;height:60px;">
             <?php else: ?>
-              <div class="avatar-placeholder" style="width:56px;height:56px;font-size:22px;
+              <div class="avatar-placeholder" style="width:60px;height:60px;font-size:24px;
                           background:var(--gradient-brand);"><?= e($initial) ?></div>
             <?php endif; ?>
           </a>

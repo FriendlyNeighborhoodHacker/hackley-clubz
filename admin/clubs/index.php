@@ -40,7 +40,7 @@ ob_start();
     <table class="log-table">
       <thead>
         <tr>
-          <th style="width:52px;"></th>
+          <th style="width:72px;"></th>
           <th>Name</th>
           <th>Meets</th>
           <th>Members</th>
@@ -58,9 +58,9 @@ ob_start();
           <tr>
             <td style="padding:8px 10px;">
               <?php if ($photoUrl !== ''): ?>
-                <img src="<?= e($photoUrl) ?>" class="avatar avatar-sm" alt="">
+                <img src="<?= e($photoUrl) ?>" class="avatar" style="width:60px;height:60px;" alt="">
               <?php else: ?>
-                <div class="avatar-placeholder avatar-sm" style="font-size:11px; background:var(--gradient-brand);">
+                <div class="avatar-placeholder" style="width:60px;height:60px;font-size:24px;background:var(--gradient-brand);">
                   <?= e($initial) ?>
                 </div>
               <?php endif; ?>
