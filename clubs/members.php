@@ -34,7 +34,7 @@ $activeSidebar = 'browse-clubs';
 
 ob_start();
 ?>
-<div style="max-width:960px; margin:0 auto;">
+<div style="max-width:720px; margin:0 auto;">
 
   <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
     <a href="/clubs/view.php?id=<?= $clubId ?>"
@@ -49,135 +49,77 @@ ob_start();
     </div>
   </div>
 
-  <div class="table-wrap">
-    <table class="log-table">
-      <thead>
-        <tr>
-          <th style="width:44px;"></th>
-          <th>Name</th>
-          <th>Role</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <?php if ($canManage): ?>
-            <th style="width:1%;"></th>
-          <?php endif; ?>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($members as $m): ?>
-          <?php
-            $photoUrl = Files::profilePhotoUrl($m['photo_public_file_id'] ?? null);
-            $initials = strtoupper(
-                substr($m['first_name'] ?? '', 0, 1) .
-                substr($m['last_name']  ?? '', 0, 1)
-            );
-            if ($initials === '') $initials = strtoupper(substr($m['email'] ?? '', 0, 1));
-            $fullName = trim(($m['first_name'] ?? '') . ' ' . ($m['last_name'] ?? ''));
-            if ($fullName === '') $fullName = '(no name)';
-            $memberRole    = trim((string)($m['role'] ?? ''));
-            $isMemberAdmin = !empty($m['is_club_admin']);
-          ?>
-          <tr>
-            <!-- Avatar -->
-            <td style="padding:8px 10px;">
-              <?php if ($photoUrl !== ''): ?>
-                <img src="<?= e($photoUrl) ?>" class="avatar avatar-sm" alt="">
-              <?php else: ?>
-                <div class="avatar-placeholder avatar-sm" style="font-size:11px;"><?= e($initials) ?></div>
-              <?php endif; ?>
-            </td>
+  <?php if (empty($members)): ?>
+    <p style="color:var(--text-muted); padding:32px 0; text-align:center;">No members yet.</p>
+  <?php else: ?>
 
-            <!-- Name + admin badge -->
-            <td>
-              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                <span style="font-weight:500; color:var(--text-primary);"><?= e($fullName) ?></span>
-                <?php if ($isMemberAdmin): ?>
-                  <span class="action-badge" style="color:var(--purple-mid);">Club Admin</span>
-                <?php endif; ?>
-                <?php if (($m['user_type'] ?? '') === 'adult'): ?>
-                  <span class="action-badge" style="color:var(--coral);">Faculty</span>
-                <?php endif; ?>
+    <div style="border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;">
+      <?php foreach ($members as $idx => $m): ?>
+        <?php
+          $photoUrl = Files::profilePhotoUrl($m['photo_public_file_id'] ?? null);
+          $initials = strtoupper(
+              substr($m['first_name'] ?? '', 0, 1) .
+              substr($m['last_name']  ?? '', 0, 1)
+          );
+          if ($initials === '') $initials = strtoupper(substr($m['email'] ?? '', 0, 1));
+          $fullName      = trim(($m['first_name'] ?? '') . ' ' . ($m['last_name'] ?? ''));
+          if ($fullName === '') $fullName = '(no name)';
+          $memberRole    = trim((string)($m['role'] ?? ''));
+          $isMemberAdmin = !empty($m['is_club_admin']);
+          $isFaculty     = ($m['user_type'] ?? '') === 'adult';
+        ?>
+        <div style="display:flex; align-items:center; gap:16px; padding:14px 18px;
+                    background:var(--surface);
+                    <?= $idx > 0 ? 'border-top:1px solid var(--border-light);' : '' ?>">
+
+          <!-- Photo -->
+          <div style="flex-shrink:0;">
+            <?php if ($photoUrl !== ''): ?>
+              <img src="<?= e($photoUrl) ?>" class="avatar" style="width:60px;height:60px;" alt="">
+            <?php else: ?>
+              <div class="avatar-placeholder"
+                   style="width:60px;height:60px;font-size:24px;background:var(--gradient-brand);">
+                <?= e($initials) ?>
               </div>
-            </td>
+            <?php endif; ?>
+          </div>
 
-            <!-- Role -->
-            <td style="color:var(--text-secondary); font-size:0.875rem;">
-              <?= $memberRole !== '' ? e($memberRole) : '<span style="color:var(--text-muted);">—</span>' ?>
-            </td>
-
-            <!-- Email -->
-            <td class="log-ts">
+          <!-- Info block -->
+          <div style="flex:1; min-width:0; line-height:1.5;">
+            <div style="font-weight:600; color:var(--text-primary); display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <?= e($fullName) ?>
+              <?php if ($isMemberAdmin): ?>
+                <span class="action-badge" style="color:var(--purple-mid);">Club Leader</span>
+              <?php endif; ?>
+            </div>
+            <?php if ($memberRole !== ''): ?>
+              <div style="font-size:0.82rem; color:var(--text-secondary);"><?= e($memberRole) ?></div>
+            <?php endif; ?>
+            <?php if ($isFaculty): ?>
+              <div style="font-size:0.82rem; color:var(--coral);">Faculty Advisor</div>
+            <?php endif; ?>
+            <div style="font-size:0.82rem; color:var(--text-muted);">
               <a href="mailto:<?= e($m['email'] ?? '') ?>" style="color:var(--accent-blue);">
                 <?= e($m['email'] ?? '') ?>
               </a>
-            </td>
+            </div>
+          </div>
 
-            <!-- Phone -->
-            <td class="log-ts">
-              <?php $phone = trim((string)($m['phone'] ?? '')); ?>
-              <?= $phone !== '' ? e($phone) : '<span style="color:var(--text-muted);">—</span>' ?>
-            </td>
+          <!-- Edit button (admins only) -->
+          <?php if ($canManage): ?>
+            <div style="flex-shrink:0;">
+              <a href="/clubs/membership_edit.php?club_id=<?= $clubId ?>&user_id=<?= (int)$m['id'] ?>"
+                 class="btn btn-secondary" style="font-size:13px; padding:7px 16px;">
+                Edit
+              </a>
+            </div>
+          <?php endif; ?>
 
-            <!-- Actions (club admins only) -->
-            <?php if ($canManage): ?>
-              <td style="white-space:nowrap;">
-                <div style="display:flex; gap:6px; align-items:center; justify-content:flex-end;">
-                  <?php if (!$isMemberAdmin): ?>
-                    <form method="POST" action="/clubs/member_make_admin_eval.php" style="margin:0;"
-                          onsubmit="return confirm('Make <?= e(addslashes($fullName)) ?> a Club Admin?')">
-                      <?= csrf_input() ?>
-                      <input type="hidden" name="club_id"  value="<?= $clubId ?>">
-                      <input type="hidden" name="user_id"  value="<?= (int)$m['id'] ?>">
-                      <button type="submit" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">
-                        Make Admin
-                      </button>
-                    </form>
-                  <?php else: ?>
-                    <form method="POST" action="/clubs/member_remove_admin_eval.php" style="margin:0;"
-                          onsubmit="return confirm('Remove admin rights from <?= e(addslashes($fullName)) ?>?')">
-                      <?= csrf_input() ?>
-                      <input type="hidden" name="club_id" value="<?= $clubId ?>">
-                      <input type="hidden" name="user_id" value="<?= (int)$m['id'] ?>">
-                      <button type="submit" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">
-                        Remove Admin
-                      </button>
-                    </form>
-                  <?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+    </div>
 
-                  <a href="/clubs/member_edit_role.php?club_id=<?= $clubId ?>&user_id=<?= (int)$m['id'] ?>"
-                     class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">
-                    Edit Role
-                  </a>
-
-                  <?php if ((int)$m['id'] !== $ctx->id): ?>
-                    <form method="POST" action="/clubs/member_remove_eval.php" style="margin:0;"
-                          onsubmit="return confirm('Remove <?= e(addslashes($fullName)) ?> from this club?')">
-                      <?= csrf_input() ?>
-                      <input type="hidden" name="club_id" value="<?= $clubId ?>">
-                      <input type="hidden" name="user_id" value="<?= (int)$m['id'] ?>">
-                      <button type="submit" class="btn btn-danger" style="font-size:12px;padding:5px 12px;">
-                        Remove
-                      </button>
-                    </form>
-                  <?php endif; ?>
-                </div>
-              </td>
-            <?php endif; ?>
-          </tr>
-        <?php endforeach; ?>
-
-        <?php if (empty($members)): ?>
-          <tr>
-            <td colspan="<?= $canManage ? 6 : 5 ?>"
-                style="padding:32px; text-align:center; color:var(--text-muted);">
-              No members yet.
-            </td>
-          </tr>
-        <?php endif; ?>
-      </tbody>
-    </table>
-  </div>
-
+  <?php endif; ?>
 </div>
 <?php
 $content = ob_get_clean();

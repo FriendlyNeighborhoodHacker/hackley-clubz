@@ -195,6 +195,27 @@ final class ClubManagement {
     }
 
     /**
+     * Return a single membership row (joined with user data) for one club+user pair,
+     * or null if the user is not a member.
+     */
+    public static function getMembership(int $clubId, int $userId): ?array {
+        $st = pdo()->prepare(
+            'SELECT u.id, u.first_name, u.last_name, u.email, u.phone,
+                    u.photo_public_file_id, u.user_type,
+                    cm.is_club_admin, cm.role, cm.notification_setting
+             FROM users u
+             JOIN club_memberships cm ON cm.user_id = u.id
+             WHERE cm.club_id = :cid AND cm.user_id = :uid
+             LIMIT 1'
+        );
+        $st->bindValue(':cid', $clubId, \PDO::PARAM_INT);
+        $st->bindValue(':uid', $userId, \PDO::PARAM_INT);
+        $st->execute();
+        $row = $st->fetch();
+        return $row ?: null;
+    }
+
+    /**
      * Return all clubs a user is a member of, alphabetized.
      *
      * @return array[]
@@ -439,6 +460,110 @@ final class ClubManagement {
         $st->execute();
 
         ActivityLog::log($ctx, 'club.leave', ['club_id' => $clubId]);
+    }
+
+    /**
+     * Grant or revoke club-admin status for a specific member.
+     *
+     * Allowed for app admins and club admins.
+     *
+     * @throws \RuntimeException if the actor lacks permission or the target is not a member
+     */
+    public static function setMemberAdminStatus(
+        UserContext $ctx,
+        int         $clubId,
+        int         $targetUserId,
+        bool        $isAdmin
+    ): void {
+        if (!$ctx->admin && !self::isUserClubAdmin($ctx->id, $clubId)) {
+            throw new \RuntimeException('You must be a club admin to change member roles.');
+        }
+
+        if (!self::isUserMember($targetUserId, $clubId)) {
+            throw new \RuntimeException('That user is not a member of this club.');
+        }
+
+        $st = pdo()->prepare(
+            'UPDATE club_memberships SET is_club_admin = :admin
+             WHERE club_id = :cid AND user_id = :uid'
+        );
+        $st->bindValue(':admin', $isAdmin ? 1 : 0, \PDO::PARAM_INT);
+        $st->bindValue(':cid',   $clubId,           \PDO::PARAM_INT);
+        $st->bindValue(':uid',   $targetUserId,      \PDO::PARAM_INT);
+        $st->execute();
+
+        $action = $isAdmin ? 'club.member.make_admin' : 'club.member.remove_admin';
+        ActivityLog::log($ctx, $action, ['club_id' => $clubId, 'target_user_id' => $targetUserId]);
+    }
+
+    /**
+     * Update the role label for a specific club member.
+     *
+     * Allowed for app admins and club admins.
+     *
+     * @throws \RuntimeException if the actor lacks permission or the target is not a member
+     */
+    public static function updateMemberRole(
+        UserContext $ctx,
+        int         $clubId,
+        int         $targetUserId,
+        string      $role
+    ): void {
+        if (!$ctx->admin && !self::isUserClubAdmin($ctx->id, $clubId)) {
+            throw new \RuntimeException('You must be a club admin to edit member roles.');
+        }
+
+        if (!self::isUserMember($targetUserId, $clubId)) {
+            throw new \RuntimeException('That user is not a member of this club.');
+        }
+
+        $st = pdo()->prepare(
+            'UPDATE club_memberships SET role = :role
+             WHERE club_id = :cid AND user_id = :uid'
+        );
+        $st->bindValue(':role', trim($role), \PDO::PARAM_STR);
+        $st->bindValue(':cid',  $clubId,     \PDO::PARAM_INT);
+        $st->bindValue(':uid',  $targetUserId, \PDO::PARAM_INT);
+        $st->execute();
+
+        ActivityLog::log($ctx, 'club.member.role_updated', [
+            'club_id'        => $clubId,
+            'target_user_id' => $targetUserId,
+            'role'           => trim($role),
+        ]);
+    }
+
+    /**
+     * Remove a specific member from a club (admin action — not self-leave).
+     *
+     * Allowed for app admins and club admins.
+     *
+     * @throws \RuntimeException if the actor lacks permission or the target is not a member
+     */
+    public static function removeMember(
+        UserContext $ctx,
+        int         $clubId,
+        int         $targetUserId
+    ): void {
+        if (!$ctx->admin && !self::isUserClubAdmin($ctx->id, $clubId)) {
+            throw new \RuntimeException('You must be a club admin to remove members.');
+        }
+
+        if (!self::isUserMember($targetUserId, $clubId)) {
+            throw new \RuntimeException('That user is not a member of this club.');
+        }
+
+        $st = pdo()->prepare(
+            'DELETE FROM club_memberships WHERE club_id = :cid AND user_id = :uid'
+        );
+        $st->bindValue(':cid', $clubId,      \PDO::PARAM_INT);
+        $st->bindValue(':uid', $targetUserId, \PDO::PARAM_INT);
+        $st->execute();
+
+        ActivityLog::log($ctx, 'club.member.removed', [
+            'club_id'        => $clubId,
+            'target_user_id' => $targetUserId,
+        ]);
     }
 
     /**
