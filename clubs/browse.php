@@ -69,21 +69,34 @@ ob_start();
         style="background:var(--surface); border:1px solid var(--border);
                border-radius:var(--radius); padding:18px 20px; margin-bottom:24px;">
 
-    <!-- Keyword search -->
-    <div style="display:flex; gap:10px; margin-bottom:14px;">
+    <!-- Keyword search + filter toggle -->
+    <div style="display:flex; gap:10px; align-items:center;">
       <input type="text" name="q" id="browse-search" placeholder="Search clubs…"
              value="<?= e($filterKeyword) ?>"
              style="flex:1; max-width:400px;"
              autocomplete="off">
       <button type="submit" class="btn btn-primary" style="padding:10px 20px;">Search</button>
+      <!-- Expand/collapse filter button -->
+      <button type="button" id="browse-filter-toggle"
+              title="More filters" aria-expanded="<?= !empty($filterDays) ? 'true' : 'false' ?>"
+              aria-controls="browse-day-filter"
+              style="padding:9px 12px; border:1.5px solid var(--border);
+                     border-radius:var(--radius-sm); background:none; cursor:pointer;
+                     font-size:15px; line-height:1; white-space:nowrap;
+                     transition:background .15s, color .15s, border-color .15s;
+                     color:<?= !empty($filterDays) ? 'var(--purple-dark)' : 'var(--text-secondary)' ?>;
+                     border-color:<?= !empty($filterDays) ? 'var(--purple-mid)' : 'var(--border)' ?>;">
+        <span id="browse-filter-icon"><?= !empty($filterDays) ? '−' : '+' ?></span>
+      </button>
       <?php if ($hasFilter): ?>
         <a href="/clubs/browse.php" class="btn btn-secondary"
            style="padding:10px 16px; white-space:nowrap;">✕ Clear</a>
       <?php endif; ?>
     </div>
 
-    <!-- Day filter checkboxes -->
-    <div>
+    <!-- Day filter — hidden by default, shown when toggle is clicked or days are active -->
+    <div id="browse-day-filter"
+         style="<?= !empty($filterDays) ? '' : 'display:none;' ?> margin-top:14px;">
       <div style="font-size:0.78rem; font-weight:600; color:var(--text-muted);
                   text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">
         Filter by meeting day
@@ -104,7 +117,23 @@ ob_start();
   </form>
 
   <script>
-  // Auto-submit the filter form when any day checkbox changes
+  (function () {
+    const toggle = document.getElementById('browse-filter-toggle');
+    const panel  = document.getElementById('browse-day-filter');
+    const icon   = document.getElementById('browse-filter-icon');
+    if (!toggle || !panel) return;
+
+    toggle.addEventListener('click', () => {
+      const isOpen = panel.style.display !== 'none';
+      panel.style.display      = isOpen ? 'none' : 'block';
+      icon.textContent          = isOpen ? '+' : '−';
+      toggle.style.color        = isOpen ? 'var(--text-secondary)' : 'var(--purple-dark)';
+      toggle.style.borderColor  = isOpen ? 'var(--border)' : 'var(--purple-mid)';
+      toggle.setAttribute('aria-expanded', String(!isOpen));
+    });
+  })();
+
+  // Auto-submit when a day checkbox changes
   document.querySelectorAll('.browse-day-cb').forEach(cb => {
     cb.addEventListener('change', () => document.getElementById('browse-filter-form').submit());
   });

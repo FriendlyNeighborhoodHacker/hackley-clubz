@@ -54,18 +54,6 @@ ob_start();
 
   <div class="table-wrap">
     <table class="log-table">
-      <thead>
-        <tr>
-          <th style="width:44px;"></th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Type</th>
-          <th>Role</th>
-          <th>Verified</th>
-          <th>Joined</th>
-          <th></th>
-        </tr>
-      </thead>
       <tbody>
         <?php foreach ($users as $u): ?>
           <?php
@@ -79,54 +67,45 @@ ob_start();
             if ($fullName === '') $fullName = '(no name)';
           ?>
           <tr>
-            <td style="padding:8px 10px;">
+            <!-- Square avatar -->
+            <td style="padding:8px 10px; width:76px; min-width:76px; vertical-align:middle;">
               <?php if ($photoUrl !== ''): ?>
-                <img src="<?= e($photoUrl) ?>" class="avatar avatar-sm" alt="">
+                <img src="<?= e($photoUrl) ?>" class="avatar"
+                     alt="" style="width:60px; height:60px;">
               <?php else: ?>
-                <div class="avatar-placeholder avatar-sm" style="font-size:11px;"><?= e($initials) ?></div>
+                <div class="avatar-placeholder"
+                     style="width:60px; height:60px; font-size:20px;"><?= e($initials) ?></div>
               <?php endif; ?>
             </td>
-            <td>
-              <a href="/admin/users/edit.php?id=<?= (int)$u['id'] ?>" style="color:var(--text-primary);font-weight:500;">
-                <?= e($fullName) ?>
-              </a>
+
+            <!-- Stacked info: name, badges, email -->
+            <td style="vertical-align:middle;">
+              <div>
+                <a href="/admin/users/edit.php?id=<?= (int)$u['id'] ?>"
+                   style="color:var(--text-primary); font-weight:600; font-size:0.95rem;">
+                  <?= e($fullName) ?>
+                </a>
+                <?php if (!empty($u['is_admin'])): ?>
+                  <span class="action-badge" style="color:var(--purple-mid); margin-left:6px;">App Admin</span>
+                <?php endif; ?>
+                <?php if (($u['user_type'] ?? '') === 'adult'): ?>
+                  <span class="action-badge" style="color:var(--coral); margin-left:6px;">Adult</span>
+                <?php endif; ?>
+              </div>
+              <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
+                <?= e($u['email'] ?? '') ?>
+              </div>
             </td>
-            <td class="log-ts"><?= e($u['email'] ?? '') ?></td>
-            <td>
-              <span class="action-badge" style="<?= ($u['user_type'] ?? '') === 'student' ? 'color:var(--accent-blue)' : '' ?>">
-                <?= e($u['user_type'] ?? 'adult') ?>
-              </span>
-            </td>
-            <td>
-              <?php if (!empty($u['is_admin'])): ?>
-                <span class="action-badge" style="color:var(--purple-mid);">App Admin</span>
-              <?php else: ?>
-                <span style="color:var(--text-muted);font-size:0.8rem;">—</span>
-              <?php endif; ?>
-            </td>
-            <td>
-              <?php if ($u['email_verified_at'] !== null): ?>
-                <span class="status-success" style="font-size:0.8rem;">✓ Verified</span>
-              <?php else: ?>
-                <span class="status-failed" style="font-size:0.8rem;">Unverified</span>
-              <?php endif; ?>
-            </td>
-            <td class="log-ts"><?= e(substr((string)($u['created_at'] ?? ''), 0, 10)) ?></td>
-            <td style="white-space:nowrap;display:flex;gap:6px;align-items:center;">
-              <a href="/admin/users/edit.php?id=<?= (int)$u['id'] ?>" class="btn btn-secondary" style="font-size:12px;padding:5px 12px;">Edit</a>
-              <?php if ((int)$u['id'] !== $loggedInUserId): ?>
-                <form method="POST" action="/admin/users/delete_eval.php" style="margin:0;"
-                      onsubmit="return confirm('Permanently delete <?= e(addslashes(trim(($u['first_name'] ?? '').' '.($u['last_name'] ?? '')) ?: ($u['email'] ?? 'this user'))) ?>?\n\nThis cannot be undone.')">
-                  <?= csrf_input() ?>
-                  <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
-                  <button type="submit" class="btn btn-danger" style="font-size:12px;padding:5px 12px;">Delete</button>
-                </form>
-              <?php endif; ?>
+
+            <!-- Edit button only -->
+            <td style="white-space:nowrap; vertical-align:middle; text-align:right;">
+              <a href="/admin/users/edit.php?id=<?= (int)$u['id'] ?>"
+                 class="btn btn-secondary" style="font-size:12px; padding:5px 12px;">Edit</a>
             </td>
           </tr>
         <?php endforeach; ?>
         <?php if (empty($users)): ?>
-          <tr><td colspan="8" style="padding:24px;text-align:center;color:var(--text-muted);">No users found.</td></tr>
+          <tr><td colspan="3" style="padding:32px;text-align:center;color:var(--text-muted);">No users found.</td></tr>
         <?php endif; ?>
       </tbody>
     </table>

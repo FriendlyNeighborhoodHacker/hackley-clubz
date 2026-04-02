@@ -592,6 +592,7 @@ textarea::placeholder {
   object-fit: cover;
   display: block;
   flex-shrink: 0;
+  max-width: none;
 }
 .avatar-sm  { width: 32px;  height: 32px; }
 .avatar-md  { width: 48px;  height: 48px; }

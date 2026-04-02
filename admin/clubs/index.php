@@ -44,8 +44,6 @@ ob_start();
           <th>Name</th>
           <th>Meets</th>
           <th>Members</th>
-          <th>Visibility</th>
-          <th>Created</th>
           <th></th>
         </tr>
       </thead>
@@ -95,14 +93,6 @@ ob_start();
             </td>
             <td style="color:var(--text-secondary);"><?= (int)$club['member_count'] ?></td>
             <td>
-              <?php if ($club['is_secret']): ?>
-                <span class="action-badge" style="color:var(--text-muted);">Secret</span>
-              <?php else: ?>
-                <span class="action-badge" style="color:var(--success);">Public</span>
-              <?php endif; ?>
-            </td>
-            <td class="log-ts"><?= e(substr((string)$club['created_at'], 0, 10)) ?></td>
-            <td>
               <a href="/admin/clubs/edit.php?id=<?= (int)$club['id'] ?>"
                  class="btn btn-secondary" style="font-size:12px; padding:5px 12px;">Edit</a>
             </td>
@@ -110,7 +100,7 @@ ob_start();
         <?php endforeach; ?>
         <?php if (empty($clubs)): ?>
           <tr>
-            <td colspan="7" style="padding:32px; text-align:center; color:var(--text-muted);">
+            <td colspan="5" style="padding:32px; text-align:center; color:var(--text-muted);">
               No clubs yet. <a href="/admin/clubs/add.php">Add the first one →</a>
             </td>
           </tr>
