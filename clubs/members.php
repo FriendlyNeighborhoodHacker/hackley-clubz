@@ -32,24 +32,6 @@ $members = ClubManagement::listClubMembers($clubId);
 $pageTitle     = 'Members — ' . $club['name'];
 $activeSidebar = 'browse-clubs';
 
-// ── Club panel nav ──────────────────────────────────────────────────────────
-$clubPanelTitle = $club['name'];
-ob_start(); ?>
-<div style="padding:4px 0 8px;">
-  <a href="/clubs/view.php?id=<?= $clubId ?>" class="admin-panel-link">
-    Club Info
-  </a>
-  <?php if ($canManage): ?>
-    <a href="/clubs/settings.php?id=<?= $clubId ?>" class="admin-panel-link">
-      ⚙️ Settings
-    </a>
-  <?php endif; ?>
-  <a href="/clubs/members.php?id=<?= $clubId ?>" class="admin-panel-link active">
-    👑 Members
-  </a>
-</div>
-<?php $clubPanelContent = ob_get_clean();
-
 ob_start();
 ?>
 <div style="max-width:960px; margin:0 auto;">

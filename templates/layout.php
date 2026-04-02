@@ -183,26 +183,6 @@ $announcement  = trim((string)(Settings::get('announcement') ?? ''));
   </aside>
   <?php endif; ?>
 
-  <!-- ===== Club Panel (injected by club pages) ===== -->
-  <aside class="club-panel" id="club-panel" aria-label="Club navigation">
-    <div class="club-panel-header">
-      <span class="club-panel-title"><?= e($clubPanelTitle ?? 'Clubs') ?></span>
-      <button class="club-panel-toggle" id="club-panel-toggle"
-              title="Collapse panel" aria-label="Toggle club panel"
-              aria-expanded="true" aria-controls="club-panel-body">
-        <!-- Chevron left — rotates to point right when collapsed -->
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-      </button>
-    </div>
-    <div class="club-panel-body" id="club-panel-body">
-      <?php if (isset($clubPanelContent)) echo $clubPanelContent; ?>
-    </div>
-  </aside>
-
   <!-- ===== Main Content ===== -->
   <main class="main-content" id="main-content">
     <?= Flash::render() ?>
@@ -220,64 +200,25 @@ $announcement  = trim((string)(Settings::get('announcement') ?? ''));
 <?php if (isset($extraJs)) echo $extraJs; ?>
 
 <script>
-// ─── Club panel collapse/expand ───────────────────────────────────────────
-(function () {
-  const panel = document.getElementById('club-panel');
-  const btn   = document.getElementById('club-panel-toggle');
-  if (!panel || !btn) return;
-
-  const STORAGE_KEY = 'clubPanelCollapsed';
-
-  function setCollapsed(collapsed, animate) {
-    if (!animate) panel.style.transition = 'none';
-    panel.classList.toggle('collapsed', collapsed);
-    btn.setAttribute('aria-expanded', String(!collapsed));
-    btn.title = collapsed ? 'Expand panel' : 'Collapse panel';
-    localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
-    if (!animate) {
-      requestAnimationFrame(() => { panel.style.transition = ''; });
-    }
-  }
-
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved === '1') setCollapsed(true, false);
-
-  btn.addEventListener('click', () => {
-    setCollapsed(!panel.classList.contains('collapsed'), true);
-  });
-})();
-
 // ─── Admin panel toggle ────────────────────────────────────────────────────
+// Panel always starts closed. Opens on icon click, closes on close button.
+// Does not persist across page loads.
 (function () {
   const adminBtn   = document.getElementById('admin-panel-btn');
   const closeBtn   = document.getElementById('admin-panel-close');
   const adminPanel = document.getElementById('admin-panel');
-  const clubPanel  = document.getElementById('club-panel');
   if (!adminBtn || !adminPanel) return;
 
-  const STORAGE_KEY = 'adminPanelOpen';
-
   function openAdminPanel() {
-    // Hide the club panel while admin is showing
-    if (clubPanel) clubPanel.classList.add('panel-hidden');
     adminPanel.classList.remove('panel-hidden');
     adminBtn.classList.add('active');
     adminBtn.setAttribute('aria-expanded', 'true');
-    localStorage.setItem(STORAGE_KEY, '1');
   }
 
   function closeAdminPanel() {
     adminPanel.classList.add('panel-hidden');
-    // Restore club panel
-    if (clubPanel) clubPanel.classList.remove('panel-hidden');
     adminBtn.classList.remove('active');
     adminBtn.setAttribute('aria-expanded', 'false');
-    localStorage.setItem(STORAGE_KEY, '0');
-  }
-
-  // Restore saved state on load (no animation needed)
-  if (localStorage.getItem(STORAGE_KEY) === '1') {
-    openAdminPanel();
   }
 
   adminBtn.addEventListener('click', () => {

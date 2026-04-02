@@ -41,24 +41,6 @@ $initial     = strtoupper(substr($club['name'], 0, 1));
 $pageTitle     = $club['name'];
 $activeSidebar = 'browse-clubs';
 
-// ── Club panel nav ──────────────────────────────────────────────────────────
-$clubPanelTitle = $club['name'];
-ob_start(); ?>
-<div style="padding:4px 0 8px;">
-  <a href="/clubs/view.php?id=<?= $clubId ?>" class="admin-panel-link active">
-    Club Info
-  </a>
-  <?php if ($canManage): ?>
-    <a href="/clubs/settings.php?id=<?= $clubId ?>" class="admin-panel-link">
-      ⚙️ Settings
-    </a>
-    <a href="/clubs/members.php?id=<?= $clubId ?>" class="admin-panel-link">
-      👑 Members
-    </a>
-  <?php endif; ?>
-</div>
-<?php $clubPanelContent = ob_get_clean();
-
 ob_start();
 ?>
 <div style="max-width:720px; margin:0 auto;">

@@ -45,22 +45,6 @@ $heroUrl  = $club['hero_public_file_id']
 $pageTitle     = 'Settings — ' . $club['name'];
 $activeSidebar = 'browse-clubs';
 
-// ── Club panel nav ──────────────────────────────────────────────────────────
-$clubPanelTitle = $club['name'];
-ob_start(); ?>
-<div style="padding:4px 0 8px;">
-  <a href="/clubs/view.php?id=<?= $clubId ?>" class="admin-panel-link">
-    Club Info
-  </a>
-  <a href="/clubs/settings.php?id=<?= $clubId ?>" class="admin-panel-link active">
-    ⚙️ Settings
-  </a>
-  <a href="/clubs/members.php?id=<?= $clubId ?>" class="admin-panel-link">
-    👑 Members
-  </a>
-</div>
-<?php $clubPanelContent = ob_get_clean();
-
 ob_start();
 ?>
 <style>
