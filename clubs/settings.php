@@ -75,22 +75,46 @@ ob_start();
 
 <div style="max-width:640px; margin:0 auto;">
 
+  <!-- Crumbtrail -->
+  <a href="/clubs/view.php?id=<?= $clubId ?>"
+     style="color:var(--text-secondary); font-size:14px; text-decoration:none; display:block; margin-bottom:12px;">
+    ← <?= e($club['name']) ?>
+  </a>
+
+  <!-- Hero image -->
   <?php if ($heroUrl !== ''): ?>
-    <div style="margin-bottom:20px; border-radius:var(--radius); overflow:hidden;
+    <div style="margin-bottom:0; border-radius:var(--radius); overflow:hidden;
                 aspect-ratio:3/1; background:var(--border);">
       <img src="<?= e($heroUrl) ?>" alt="<?= e($club['name']) ?>"
            style="width:100%; height:100%; object-fit:cover; display:block;">
     </div>
   <?php endif; ?>
 
-  <div style="display:flex; align-items:center; gap:12px; margin-bottom:28px; flex-wrap:wrap;">
-    <a href="/clubs/view.php?id=<?= $clubId ?>"
-       style="color:var(--text-secondary); font-size:14px; text-decoration:none; flex-shrink:0;">
-      ← <?= e($club['name']) ?>
-    </a>
-    <h1 style="font-family:var(--font-title); font-weight:200; font-size:1.5rem; flex:1;">
-      Club Settings
-    </h1>
+  <!-- Club header: photo + name + menu -->
+  <div style="display:flex; align-items:flex-start; gap:16px; margin:16px 0 28px; flex-wrap:wrap;">
+
+    <!-- Club profile photo -->
+    <?php if ($photoUrl !== ''): ?>
+      <img src="<?= e($photoUrl) ?>" class="avatar" style="width:72px;height:72px;flex-shrink:0;" alt="">
+    <?php else: ?>
+      <div class="avatar-placeholder"
+           style="width:72px;height:72px;font-size:28px;flex-shrink:0;background:var(--gradient-brand);">
+        <?= e(strtoupper(substr($club['name'], 0, 1))) ?>
+      </div>
+    <?php endif; ?>
+
+    <!-- Club name › Section -->
+    <div style="flex:1; min-width:0;">
+      <h1 style="font-family:var(--font-title); font-weight:200; font-size:1.8rem; margin:0 0 4px; line-height:1.2;">
+        <?= e($club['name']) ?>
+        <span style="color:var(--text-muted); margin:0 6px;">›</span>
+        <span style="color:var(--text-secondary);">Settings</span>
+      </h1>
+      <div style="font-size:0.85rem; color:var(--text-muted);">
+        <?= (int)($club['member_count'] ?? 0) ?> member<?= ((int)($club['member_count'] ?? 0)) !== 1 ? 's' : '' ?>
+      </div>
+    </div>
+
     <!-- Three-dot admin menu -->
     <div style="flex-shrink:0; position:relative;" id="club-admin-menu-wrap">
       <button type="button"

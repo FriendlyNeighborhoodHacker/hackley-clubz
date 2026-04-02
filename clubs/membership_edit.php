@@ -47,8 +47,11 @@ $isMemberAdmin = !empty($member['is_club_admin']);
 $isFaculty     = ($member['user_type'] ?? '') === 'adult';
 $isSelf        = ($ctx->id === $targetUserId);
 
-$heroUrl  = $club['hero_public_file_id']
+$heroUrl      = $club['hero_public_file_id']
     ? Files::publicFileUrl((int)$club['hero_public_file_id'])
+    : '';
+$clubPhotoUrl = $club['photo_public_file_id']
+    ? Files::publicFileUrl((int)$club['photo_public_file_id'])
     : '';
 
 $photoUrl = Files::profilePhotoUrl($member['photo_public_file_id'] ?? null);
@@ -65,23 +68,47 @@ ob_start();
 ?>
 <div style="max-width:560px; margin:0 auto;">
 
-  <!-- Back link -->
-  <div style="margin-bottom:24px; font-size:14px; color:var(--text-secondary);">
+  <!-- Crumbtrail -->
+  <div style="font-size:14px; color:var(--text-secondary); margin-bottom:12px;">
+    <a href="/clubs/view.php?id=<?= $clubId ?>"
+       style="color:var(--text-secondary); text-decoration:none;">← <?= e($club['name']) ?></a>
+    <span style="margin:0 5px; color:var(--border);">›</span>
     <a href="/clubs/members.php?id=<?= $clubId ?>"
-       style="color:var(--text-secondary); text-decoration:none;">
-      ← <?= e($club['name']) ?>
-    </a>
-    <span style="margin:0 6px; color:var(--border);">·</span>
-    <span style="color:var(--text-primary);"><?= e($fullName) ?></span>
+       style="color:var(--text-secondary); text-decoration:none;">Members</a>
   </div>
 
+  <!-- Hero image -->
   <?php if ($heroUrl !== ''): ?>
-    <div style="margin-bottom:20px; border-radius:var(--radius); overflow:hidden;
-                aspect-ratio:3/1; background:var(--border);">
+    <div style="border-radius:var(--radius); overflow:hidden; aspect-ratio:3/1; background:var(--border);">
       <img src="<?= e($heroUrl) ?>" alt="<?= e($club['name']) ?>"
            style="width:100%; height:100%; object-fit:cover; display:block;">
     </div>
   <?php endif; ?>
+
+  <!-- Club header: photo + name -->
+  <div style="display:flex; align-items:flex-start; gap:16px; margin:16px 0 24px; flex-wrap:wrap;">
+
+    <?php if ($clubPhotoUrl !== ''): ?>
+      <img src="<?= e($clubPhotoUrl) ?>" class="avatar" style="width:72px;height:72px;flex-shrink:0;" alt="">
+    <?php else: ?>
+      <div class="avatar-placeholder"
+           style="width:72px;height:72px;font-size:28px;flex-shrink:0;background:var(--gradient-brand);">
+        <?= e(strtoupper(substr($club['name'], 0, 1))) ?>
+      </div>
+    <?php endif; ?>
+
+    <div style="flex:1; min-width:0;">
+      <h1 style="font-family:var(--font-title); font-weight:200; font-size:1.8rem; margin:0 0 4px; line-height:1.2;">
+        <?= e($club['name']) ?>
+        <span style="color:var(--text-muted); margin:0 6px;">›</span>
+        <span style="color:var(--text-secondary);">Edit Membership</span>
+      </h1>
+      <div style="font-size:0.85rem; color:var(--text-muted);">
+        <?= (int)($club['member_count'] ?? 0) ?> member<?= ((int)($club['member_count'] ?? 0)) !== 1 ? 's' : '' ?>
+      </div>
+    </div>
+
+  </div>
 
   <!-- Flash messages -->
   <?= Flash::render() ?>
