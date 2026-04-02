@@ -144,6 +144,20 @@ final class ClubManagement {
     }
 
     /**
+     * Return true if the given user has club-admin privileges for this club.
+     */
+    public static function isUserClubAdmin(int $userId, int $clubId): bool {
+        $st = pdo()->prepare(
+            'SELECT COUNT(*) AS c FROM club_memberships
+             WHERE user_id = :uid AND club_id = :cid AND is_club_admin = 1'
+        );
+        $st->bindValue(':uid', $userId, \PDO::PARAM_INT);
+        $st->bindValue(':cid', $clubId, \PDO::PARAM_INT);
+        $st->execute();
+        return (int)($st->fetch()['c'] ?? 0) > 0;
+    }
+
+    /**
      * Return true if the given user is a member of the given club.
      */
     public static function isUserMember(int $userId, int $clubId): bool {
@@ -155,6 +169,29 @@ final class ClubManagement {
         $st->bindValue(':cid', $clubId, \PDO::PARAM_INT);
         $st->execute();
         return (int)($st->fetch()['c'] ?? 0) > 0;
+    }
+
+    /**
+     * Return all members of a club, with user data joined, sorted by last name.
+     *
+     * Each row contains: id, first_name, last_name, email, phone,
+     *   photo_public_file_id, user_type, is_club_admin, role.
+     *
+     * @return array[]
+     */
+    public static function listClubMembers(int $clubId): array {
+        $st = pdo()->prepare(
+            'SELECT u.id, u.first_name, u.last_name, u.email, u.phone,
+                    u.photo_public_file_id, u.user_type,
+                    cm.is_club_admin, cm.role
+             FROM users u
+             JOIN club_memberships cm ON cm.user_id = u.id
+             WHERE cm.club_id = :cid
+             ORDER BY u.last_name, u.first_name'
+        );
+        $st->bindValue(':cid', $clubId, \PDO::PARAM_INT);
+        $st->execute();
+        return $st->fetchAll() ?: [];
     }
 
     /**
@@ -289,6 +326,70 @@ final class ClubManagement {
         $st->execute();
 
         ActivityLog::log($ctx, 'club.update', ['club_id' => $clubId, 'name' => $name]);
+    }
+
+    /**
+     * Update club settings. Allowed for app admins AND club admins.
+     *
+     * Accepts the same photo/hero parameters as updateClub().
+     *
+     * @throws \RuntimeException if the actor lacks permission or name is empty
+     */
+    public static function updateClubSettings(
+        UserContext $ctx,
+        int         $clubId,
+        string      $name,
+        string      $description,
+        string      $meetingDays,
+        string      $meetingLocation,
+        ?int        $photoFileId,
+        ?int        $heroFileId,
+        bool        $isSecret,
+        bool        $clearPhoto = false,
+        bool        $clearHero  = false
+    ): void {
+        if (!$ctx->admin && !self::isUserClubAdmin($ctx->id, $clubId)) {
+            throw new \RuntimeException('You must be a club admin to update these settings.');
+        }
+
+        $name = trim($name);
+        if ($name === '') {
+            throw new \RuntimeException('Club name is required.');
+        }
+
+        $sets   = ['name = :name', 'description = :desc', 'meeting_days = :days',
+                   'meeting_location = :location', 'is_secret = :secret'];
+        $params = [
+            ':name'     => $name,
+            ':desc'     => trim($description),
+            ':days'     => trim($meetingDays),
+            ':location' => trim($meetingLocation),
+            ':secret'   => $isSecret ? 1 : 0,
+        ];
+
+        if ($photoFileId !== null) {
+            $sets[]           = 'photo_public_file_id = :photo';
+            $params[':photo'] = $photoFileId;
+        } elseif ($clearPhoto) {
+            $sets[] = 'photo_public_file_id = NULL';
+        }
+
+        if ($heroFileId !== null) {
+            $sets[]          = 'hero_public_file_id = :hero';
+            $params[':hero'] = $heroFileId;
+        } elseif ($clearHero) {
+            $sets[] = 'hero_public_file_id = NULL';
+        }
+
+        $params[':id'] = $clubId;
+        $sql = 'UPDATE clubs SET ' . implode(', ', $sets) . ' WHERE id = :id';
+        $st  = pdo()->prepare($sql);
+        foreach ($params as $k => $v) {
+            $st->bindValue($k, $v, is_int($v) ? \PDO::PARAM_INT : \PDO::PARAM_STR);
+        }
+        $st->execute();
+
+        ActivityLog::log($ctx, 'club.settings_update', ['club_id' => $clubId, 'name' => $name]);
     }
 
     /**

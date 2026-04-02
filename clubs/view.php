@@ -23,8 +23,10 @@ if (!$club || $club['is_secret']) {
     redirect('/clubs/browse.php');
 }
 
-$ctx      = UserContext::getLoggedInUserContext();
-$isMember = ClubManagement::isUserMember($ctx->id, $clubId);
+$ctx         = UserContext::getLoggedInUserContext();
+$isMember    = ClubManagement::isUserMember($ctx->id, $clubId);
+$isClubAdmin = ClubManagement::isUserClubAdmin($ctx->id, $clubId);
+$canManage   = $isClubAdmin || $ctx->admin;
 
 $heroUrl  = $club['hero_public_file_id']
     ? Files::publicFileUrl((int)$club['hero_public_file_id'])
@@ -38,6 +40,24 @@ $initial     = strtoupper(substr($club['name'], 0, 1));
 
 $pageTitle     = $club['name'];
 $activeSidebar = 'browse-clubs';
+
+// ── Club panel nav ──────────────────────────────────────────────────────────
+$clubPanelTitle = $club['name'];
+ob_start(); ?>
+<div style="padding:4px 0 8px;">
+  <a href="/clubs/view.php?id=<?= $clubId ?>" class="admin-panel-link active">
+    Club Info
+  </a>
+  <?php if ($canManage): ?>
+    <a href="/clubs/settings.php?id=<?= $clubId ?>" class="admin-panel-link">
+      ⚙️ Settings
+    </a>
+    <a href="/clubs/members.php?id=<?= $clubId ?>" class="admin-panel-link">
+      👑 Members
+    </a>
+  <?php endif; ?>
+</div>
+<?php $clubPanelContent = ob_get_clean();
 
 ob_start();
 ?>
@@ -106,6 +126,35 @@ ob_start();
         </form>
       <?php endif; ?>
     </div>
+
+    <!-- Three-dot admin menu (club admins / app admins only) -->
+    <?php if ($canManage): ?>
+    <div style="flex-shrink:0; margin-top:4px; position:relative;" id="club-admin-menu-wrap">
+      <button type="button" id="club-admin-menu-btn"
+              style="background:none; border:1.5px solid var(--border); border-radius:var(--radius-sm);
+                     padding:7px 13px; cursor:pointer; font-size:18px; color:var(--text-secondary);
+                     line-height:1; transition:background .15s, color .15s;"
+              onmouseenter="this.style.background='var(--border-light)';this.style.color='var(--purple-dark)'"
+              onmouseleave="this.style.background='none';this.style.color='var(--text-secondary)'"
+              onclick="toggleClubAdminMenu(event)"
+              title="Club admin menu"
+              aria-label="Club admin options">⋯</button>
+      <div id="club-admin-menu"
+           style="display:none; position:absolute; right:0; top:100%; margin-top:4px;
+                  background:var(--surface); border:1px solid var(--border);
+                  border-radius:var(--radius-sm); box-shadow:var(--shadow-md);
+                  min-width:160px; z-index:50; overflow:hidden;">
+        <a href="/clubs/settings.php?id=<?= $clubId ?>" class="admin-panel-link"
+           onclick="localStorage.setItem('adminPanelOpen','0')">
+          ⚙️ Settings
+        </a>
+        <a href="/clubs/members.php?id=<?= $clubId ?>" class="admin-panel-link"
+           onclick="localStorage.setItem('adminPanelOpen','0')">
+          👑 Members
+        </a>
+      </div>
+    </div>
+    <?php endif; ?>
   </div>
 
   <!-- Club info card -->
@@ -155,6 +204,18 @@ ob_start();
   </div>
 
 </div>
+
+<script>
+function toggleClubAdminMenu(e) {
+  e.stopPropagation();
+  const m = document.getElementById('club-admin-menu');
+  m.style.display = m.style.display === 'block' ? 'none' : 'block';
+}
+document.addEventListener('click', function() {
+  const m = document.getElementById('club-admin-menu');
+  if (m) m.style.display = 'none';
+});
+</script>
 <?php
 $content = ob_get_clean();
 include __DIR__ . '/../templates/layout.php';

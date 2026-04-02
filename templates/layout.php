@@ -186,7 +186,7 @@ $announcement  = trim((string)(Settings::get('announcement') ?? ''));
   <!-- ===== Club Panel (injected by club pages) ===== -->
   <aside class="club-panel" id="club-panel" aria-label="Club navigation">
     <div class="club-panel-header">
-      <span class="club-panel-title">Clubs</span>
+      <span class="club-panel-title"><?= e($clubPanelTitle ?? 'Clubs') ?></span>
       <button class="club-panel-toggle" id="club-panel-toggle"
               title="Collapse panel" aria-label="Toggle club panel"
               aria-expanded="true" aria-controls="club-panel-body">

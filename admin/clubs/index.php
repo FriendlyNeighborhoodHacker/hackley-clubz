@@ -79,7 +79,19 @@ ob_start();
               <?php endif; ?>
             </td>
             <td style="color:var(--text-secondary); font-size:0.875rem;">
-              <?= $club['meets'] !== '' ? e($club['meets']) : '<span style="color:var(--text-muted);">—</span>' ?>
+              <?php
+                $aDays  = trim((string)($club['meeting_days']     ?? ''));
+                $aLoc   = trim((string)($club['meeting_location'] ?? ''));
+                $aParts = [];
+                if ($aDays !== '') {
+                    $dn = array_filter(explode(',', $aDays));
+                    sort($dn, SORT_NUMERIC);
+                    $aParts[] = implode(', ', array_map(fn($d) => 'Day ' . trim($d), $dn));
+                }
+                if ($aLoc !== '') $aParts[] = $aLoc;
+                $aMeets = implode(' · ', $aParts);
+              ?>
+              <?= $aMeets !== '' ? e($aMeets) : '<span style="color:var(--text-muted);">—</span>' ?>
             </td>
             <td style="color:var(--text-secondary);"><?= (int)$club['member_count'] ?></td>
             <td>
