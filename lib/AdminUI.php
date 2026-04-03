@@ -23,7 +23,9 @@ class AdminUI
             htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         return '<p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">'
-             . '<a href="/admin/reports.php" style="color:var(--text-secondary); text-decoration:none;">Admin</a>'
+             . '<button type="button" onclick="document.getElementById(\'admin-panel-btn\')?.click()"'
+             . ' style="background:none; border:none; padding:0; cursor:pointer;'
+             . ' color:var(--text-secondary); font-size:inherit; font-family:inherit;">Admin</button>'
              . ' &rsaquo; '
              . $h($label)
              . '</p>' . "\n";

@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../lib/Application.php';
 require_once __DIR__ . '/../lib/Auth.php';
+require_once __DIR__ . '/../lib/AdminUI.php';
 
 Application::init();
 Auth::requireAdmin();
@@ -14,6 +15,8 @@ $activeSidebar = 'admin';
 ob_start();
 ?>
 <div class="admin-page">
+
+  <?= AdminUI::adminBreadcrumb('Reports') ?>
 
   <h2 style="margin-bottom:24px;">Reports</h2>
 
