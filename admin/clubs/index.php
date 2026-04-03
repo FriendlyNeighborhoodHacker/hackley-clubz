@@ -22,7 +22,7 @@ ob_start();
 ?>
 <div class="admin-page">
 
-  <?= AdminUI::adminSubnav('clubs') ?>
+  <?= AdminUI::adminBreadcrumb('Clubs') ?>
 
   <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
     <h2>Clubs</h2>

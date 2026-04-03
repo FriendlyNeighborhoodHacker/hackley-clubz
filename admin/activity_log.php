@@ -73,7 +73,7 @@ ob_start();
 ?>
 <div class="admin-page">
 
-  <?= AdminUI::adminSubnav('activity_log') ?>
+  <?= AdminUI::adminBreadcrumb('Activity Log') ?>
 
   <h2>Activity Log</h2>
 

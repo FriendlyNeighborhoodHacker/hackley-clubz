@@ -76,7 +76,7 @@ ob_start();
 ?>
 <div class="admin-page">
 
-  <?= AdminUI::adminSubnav('email_log') ?>
+  <?= AdminUI::adminBreadcrumb('Email Log') ?>
 
   <h2>Email Log</h2>
 

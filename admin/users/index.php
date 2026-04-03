@@ -43,7 +43,7 @@ ob_start();
 ?>
 <div class="admin-page">
 
-  <?= AdminUI::adminSubnav('users') ?>
+  <?= AdminUI::adminBreadcrumb('Users') ?>
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
     <h2>Users</h2>

@@ -49,7 +49,7 @@ ob_start();
 ?>
 <div class="admin-page">
 
-  <?= AdminUI::adminSubnav('settings') ?>
+  <?= AdminUI::adminBreadcrumb('Settings') ?>
 
   <h2>App Settings</h2>
 

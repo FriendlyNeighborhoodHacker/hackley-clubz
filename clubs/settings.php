@@ -128,6 +128,9 @@ ob_start();
         <label for="description">Description</label>
         <textarea id="description" name="description" rows="4"
                   placeholder="What is this club about?"><?= e($_POST['description'] ?? $club['description'] ?? '') ?></textarea>
+        <small style="color:var(--text-muted); font-size:12px; margin-top:6px; display:block;">
+          Supports <a href="https://www.markdownguide.org/basic-syntax/" target="_blank" rel="noopener" style="color:var(--accent-blue);">Markdown</a> formatting — bold, italic, links, images, lists, and more.
+        </small>
       </div>
 
       <?php

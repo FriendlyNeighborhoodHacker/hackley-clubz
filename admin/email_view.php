@@ -11,6 +11,7 @@ require_once __DIR__ . '/../lib/Application.php';
 require_once __DIR__ . '/../lib/Auth.php';
 require_once __DIR__ . '/../lib/EmailLog.php';
 require_once __DIR__ . '/../lib/UserManagement.php';
+require_once __DIR__ . '/../lib/AdminUI.php';
 
 Application::init();
 Auth::requireAdmin();
@@ -44,12 +45,7 @@ ob_start();
 ?>
 <div class="admin-page">
 
-  <div class="admin-subnav">
-    <a href="/admin/settings.php">Settings</a>
-    <a href="/admin/activity_log.php">Activity Log</a>
-    <a href="/admin/email_log.php" class="active">Email Log</a>
-    <a href="/admin/users/index.php">Users</a>
-  </div>
+  <?= AdminUI::adminBreadcrumb('Email Log') ?>
 
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
     <a href="/admin/email_log.php" style="color:var(--text-secondary);font-size:14px;">← Email Log</a>
