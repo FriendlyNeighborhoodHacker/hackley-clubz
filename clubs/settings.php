@@ -6,6 +6,8 @@ require_once __DIR__ . '/../lib/Application.php';
 require_once __DIR__ . '/../lib/Auth.php';
 require_once __DIR__ . '/../lib/ClubManagement.php';
 require_once __DIR__ . '/../lib/Files.php';
+require_once __DIR__ . '/../lib/ApplicationUI.php';
+require_once __DIR__ . '/../lib/ClubUI.php';
 require_once __DIR__ . '/../lib/UserContext.php';
 
 Application::init();
@@ -26,6 +28,7 @@ if (!$club) {
 $ctx         = UserContext::getLoggedInUserContext();
 $isClubAdmin = ClubManagement::isUserClubAdmin($ctx->id, $clubId);
 $canManage   = $isClubAdmin || $ctx->admin;
+$isMember    = ClubManagement::isUserMember($ctx->id, $clubId);
 
 if (!$canManage) {
     Flash::set('error', 'You do not have permission to manage this club.');
@@ -81,67 +84,21 @@ ob_start();
     ← <?= e($club['name']) ?>
   </a>
 
-  <!-- Hero image -->
-  <?php if ($heroUrl !== ''): ?>
-    <div style="margin-bottom:0; border-radius:var(--radius); overflow:hidden;
-                aspect-ratio:3/1; background:var(--border);">
-      <img src="<?= e($heroUrl) ?>" alt="<?= e($club['name']) ?>"
-           style="width:100%; height:100%; object-fit:cover; display:block;">
-    </div>
-  <?php endif; ?>
-
-  <!-- Club header: photo + name + menu -->
-  <div style="display:flex; align-items:flex-start; gap:16px; margin:16px 0 28px; flex-wrap:wrap;">
-
-    <!-- Club profile photo -->
-    <?php if ($photoUrl !== ''): ?>
-      <img src="<?= e($photoUrl) ?>" class="avatar" style="width:72px;height:72px;flex-shrink:0;" alt="">
-    <?php else: ?>
-      <div class="avatar-placeholder"
-           style="width:72px;height:72px;font-size:28px;flex-shrink:0;background:var(--gradient-brand);">
-        <?= e(strtoupper(substr($club['name'], 0, 1))) ?>
-      </div>
-    <?php endif; ?>
-
-    <!-- Club name › Section -->
-    <div style="flex:1; min-width:0;">
-      <h1 style="font-family:var(--font-title); font-weight:200; font-size:1.8rem; margin:0 0 4px; line-height:1.2;">
-        <?= e($club['name']) ?>
-        <span style="color:var(--text-muted); margin:0 6px;">›</span>
-        <span style="color:var(--text-secondary);">Settings</span>
-      </h1>
-      <div style="font-size:0.85rem; color:var(--text-muted);">
-        <?= (int)($club['member_count'] ?? 0) ?> member<?= ((int)($club['member_count'] ?? 0)) !== 1 ? 's' : '' ?>
-      </div>
-    </div>
-
-    <!-- Three-dot admin menu -->
-    <div style="flex-shrink:0; position:relative;" id="club-admin-menu-wrap">
-      <button type="button"
-              style="background:none; border:1.5px solid var(--border); border-radius:var(--radius-sm);
-                     padding:7px 13px; cursor:pointer; font-size:18px; color:var(--text-secondary);
-                     line-height:1; transition:background .15s, color .15s;"
-              onmouseenter="this.style.background='var(--border-light)';this.style.color='var(--purple-dark)'"
-              onmouseleave="this.style.background='none';this.style.color='var(--text-secondary)'"
-              onclick="toggleClubAdminMenu(event)"
-              title="Club admin menu"
-              aria-label="Club admin options">⋯</button>
-      <div id="club-admin-menu"
-           style="display:none; position:absolute; right:0; top:100%; margin-top:4px;
-                  background:var(--surface); border:1px solid var(--border);
-                  border-radius:var(--radius-sm); box-shadow:var(--shadow-md);
-                  min-width:160px; z-index:50; overflow:hidden;">
-        <a href="/clubs/settings.php?id=<?= $clubId ?>" class="admin-panel-link active"
-           onclick="localStorage.setItem('adminPanelOpen','0')">
-          ⚙️ Settings
-        </a>
-        <a href="/clubs/members.php?id=<?= $clubId ?>" class="admin-panel-link"
-           onclick="localStorage.setItem('adminPanelOpen','0')">
-          👑 Members
-        </a>
-      </div>
-    </div>
-  </div>
+<?php
+  $mc           = (int)($club['member_count'] ?? 0);
+  $meetingLine  = ClubUI::formatMeetingSubtext($club);
+  $subtextLines = $meetingLine !== '' ? [$meetingLine] : [];
+  $subtextLines[] = $mc . ' member' . ($mc !== 1 ? 's' : '');
+?>
+<?= ApplicationUI::titleBlock(
+    $club['name'], 'Settings', $photoUrl, strtoupper(substr($club['name'], 0, 1)),
+    $subtextLines,
+    ClubUI::buildClubMenuItems($clubId, 'settings', $canManage, $isMember, $club['name']),
+    $heroUrl
+) ?>
+<?php if ($isMember): ?>
+<?= ClubUI::leaveClubForm($clubId) ?>
+<?php endif; ?>
 
   <?php if ($successMsg): ?>
     <div class="flash flash--success"><?= e($successMsg) ?></div>
@@ -457,16 +414,6 @@ document.querySelector('form').addEventListener('submit', () => {
   if (hImg) document.getElementById('heroDataHidden').value  = hCanvas.toDataURL('image/jpeg', 0.9);
 });
 
-// Three-dot menu
-function toggleClubAdminMenu(e) {
-  e.stopPropagation();
-  const m = document.getElementById('club-admin-menu');
-  m.style.display = m.style.display === 'block' ? 'none' : 'block';
-}
-document.addEventListener('click', function() {
-  const m = document.getElementById('club-admin-menu');
-  if (m) m.style.display = 'none';
-});
 </script>
 <?php
 $content = ob_get_clean();

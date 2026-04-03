@@ -6,6 +6,8 @@ require_once __DIR__ . '/../lib/Application.php';
 require_once __DIR__ . '/../lib/Auth.php';
 require_once __DIR__ . '/../lib/ClubManagement.php';
 require_once __DIR__ . '/../lib/Files.php';
+require_once __DIR__ . '/../lib/ApplicationUI.php';
+require_once __DIR__ . '/../lib/ClubUI.php';
 require_once __DIR__ . '/../lib/UserContext.php';
 
 Application::init();
@@ -26,6 +28,7 @@ if (!$club) {
 $ctx         = UserContext::getLoggedInUserContext();
 $isClubAdmin = ClubManagement::isUserClubAdmin($ctx->id, $clubId);
 $canManage   = $isClubAdmin || $ctx->admin;
+$isMember    = ClubManagement::isUserMember($ctx->id, $clubId);
 
 $members      = ClubManagement::listClubMembers($clubId);
 $heroUrl      = $club['hero_public_file_id']
@@ -48,38 +51,20 @@ ob_start();
     ← <?= e($club['name']) ?>
   </a>
 
-  <!-- Hero image -->
-  <?php if ($heroUrl !== ''): ?>
-    <div style="border-radius:var(--radius); overflow:hidden; aspect-ratio:3/1; background:var(--border);">
-      <img src="<?= e($heroUrl) ?>" alt="<?= e($club['name']) ?>"
-           style="width:100%; height:100%; object-fit:cover; display:block;">
-    </div>
-  <?php endif; ?>
-
-  <!-- Club header: photo + name -->
-  <div style="display:flex; align-items:flex-start; gap:16px; margin:16px 0 24px; flex-wrap:wrap;">
-
-    <?php if ($clubPhotoUrl !== ''): ?>
-      <img src="<?= e($clubPhotoUrl) ?>" class="avatar" style="width:72px;height:72px;flex-shrink:0;" alt="">
-    <?php else: ?>
-      <div class="avatar-placeholder"
-           style="width:72px;height:72px;font-size:28px;flex-shrink:0;background:var(--gradient-brand);">
-        <?= e(strtoupper(substr($club['name'], 0, 1))) ?>
-      </div>
-    <?php endif; ?>
-
-    <div style="flex:1; min-width:0;">
-      <h1 style="font-family:var(--font-title); font-weight:200; font-size:1.8rem; margin:0 0 4px; line-height:1.2;">
-        <?= e($club['name']) ?>
-        <span style="color:var(--text-muted); margin:0 6px;">›</span>
-        <span style="color:var(--text-secondary);">Members</span>
-      </h1>
-      <div style="font-size:0.85rem; color:var(--text-muted);">
-        <?= count($members) ?> member<?= count($members) !== 1 ? 's' : '' ?>
-      </div>
-    </div>
-
-  </div>
+<?php
+  $meetingLine  = ClubUI::formatMeetingSubtext($club);
+  $subtextLines = $meetingLine !== '' ? [$meetingLine] : [];
+  $subtextLines[] = count($members) . ' member' . (count($members) !== 1 ? 's' : '');
+?>
+<?= ApplicationUI::titleBlock(
+    $club['name'], 'Members', $clubPhotoUrl, strtoupper(substr($club['name'], 0, 1)),
+    $subtextLines,
+    ClubUI::buildClubMenuItems($clubId, 'members', $canManage, $isMember, $club['name']),
+    $heroUrl
+) ?>
+<?php if ($isMember): ?>
+<?= ClubUI::leaveClubForm($clubId) ?>
+<?php endif; ?>
 
   <?php if (empty($members)): ?>
     <p style="color:var(--text-muted); padding:32px 0; text-align:center;">No members yet.</p>

@@ -9,7 +9,7 @@ require_once __DIR__ . '/../lib/UserContext.php';
 
 Application::init();
 Auth::requireLogin();
-verify_csrf();
+csrf_verify();
 
 $clubId = (int)($_POST['club_id'] ?? 0);
 if ($clubId <= 0) {
