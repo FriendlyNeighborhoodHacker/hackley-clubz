@@ -40,7 +40,12 @@ class ClubUI
 
         $items = [];
         foreach ($all as $key => $item) {
-            if ($key !== 'info' && !$canManage) {
+            // Settings: club/app admins only
+            if ($key === 'settings' && !$canManage) {
+                continue;
+            }
+            // Members: any club member (or admin)
+            if ($key === 'members' && !$isMember && !$canManage) {
                 continue;
             }
             $items[] = [

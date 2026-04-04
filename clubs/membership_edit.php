@@ -71,15 +71,6 @@ ob_start();
 ?>
 <div style="max-width:560px; margin:0 auto;">
 
-  <!-- Crumbtrail -->
-  <div style="font-size:14px; color:var(--text-secondary); margin-bottom:12px;">
-    <a href="/clubs/view.php?id=<?= $clubId ?>"
-       style="color:var(--text-secondary); text-decoration:none;">← <?= e($club['name']) ?></a>
-    <span style="margin:0 5px; color:var(--border);">›</span>
-    <a href="/clubs/members.php?id=<?= $clubId ?>"
-       style="color:var(--text-secondary); text-decoration:none;">Members</a>
-  </div>
-
 <?php
   $mc           = (int)($club['member_count'] ?? 0);
   $meetingLine  = ClubUI::formatMeetingSubtext($club);
@@ -90,7 +81,13 @@ ob_start();
     $club['name'], 'Edit Membership', $clubPhotoUrl, strtoupper(substr($club['name'], 0, 1)),
     $subtextLines,
     ClubUI::buildClubMenuItems($clubId, '', $canManage, $isMember, $club['name']),
-    $heroUrl
+    $heroUrl,
+    '',
+    '',
+    [
+        ['label' => $club['name'], 'href' => '/clubs/view.php?id='    . $clubId],
+        ['label' => 'Members',    'href' => '/clubs/members.php?id=' . $clubId],
+    ]
 ) ?>
 <?php if ($isMember): ?>
 <?= ClubUI::leaveClubForm($clubId) ?>

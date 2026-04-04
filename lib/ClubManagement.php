@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/UserContext.php';
 require_once __DIR__ . '/ActivityLog.php';
+require_once __DIR__ . '/Files.php';
 
 /**
  * All club-related database operations.

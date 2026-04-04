@@ -78,12 +78,6 @@ ob_start();
 
 <div style="max-width:640px; margin:0 auto;">
 
-  <!-- Crumbtrail -->
-  <a href="/clubs/view.php?id=<?= $clubId ?>"
-     style="color:var(--text-secondary); font-size:14px; text-decoration:none; display:block; margin-bottom:12px;">
-    ← <?= e($club['name']) ?>
-  </a>
-
 <?php
   $mc           = (int)($club['member_count'] ?? 0);
   $meetingLine  = ClubUI::formatMeetingSubtext($club);
@@ -94,7 +88,10 @@ ob_start();
     $club['name'], 'Settings', $photoUrl, strtoupper(substr($club['name'], 0, 1)),
     $subtextLines,
     ClubUI::buildClubMenuItems($clubId, 'settings', $canManage, $isMember, $club['name']),
-    $heroUrl
+    $heroUrl,
+    '',
+    '',
+    [['label' => $club['name'], 'href' => '/clubs/view.php?id=' . $clubId]]
 ) ?>
 <?php if ($isMember): ?>
 <?= ClubUI::leaveClubForm($clubId) ?>
@@ -107,7 +104,7 @@ ob_start();
     <div class="flash flash--error"><?= e($errorMsg) ?></div>
   <?php endif; ?>
 
-  <form method="POST" action="/clubs/settings_eval.php" novalidate>
+  <form id="settings-form" method="POST" action="/clubs/settings_eval.php" novalidate>
     <?= csrf_input() ?>
     <input type="hidden" name="club_id" value="<?= $clubId ?>">
 
@@ -222,6 +219,9 @@ ob_start();
                 onclick="document.getElementById('photoFileInput').click()">
           Choose different photo
         </button>
+        <button type="submit" class="btn btn-primary" style="font-size:13px; margin-top:4px; margin-bottom:8px;">
+          Save Photo
+        </button>
       </div>
 
       <input type="file" id="photoFileInput" accept="image/jpeg,image/png,image/webp"
@@ -270,6 +270,9 @@ ob_start();
         <button type="button" class="btn btn-secondary" style="font-size:13px; margin-bottom:8px;"
                 onclick="document.getElementById('heroFileInput').click()">
           Choose different image
+        </button>
+        <button type="submit" class="btn btn-primary" style="font-size:13px; margin-top:4px; margin-bottom:8px;">
+          Save Hero Image
         </button>
       </div>
 
@@ -412,7 +415,7 @@ function hClamp() {
 }
 
 // Capture canvases on submit
-document.querySelector('form').addEventListener('submit', () => {
+document.getElementById('settings-form').addEventListener('submit', () => {
   if (pImg) document.getElementById('photoDataHidden').value = pCanvas.toDataURL('image/jpeg', 0.9);
   if (hImg) document.getElementById('heroDataHidden').value  = hCanvas.toDataURL('image/jpeg', 0.9);
 });

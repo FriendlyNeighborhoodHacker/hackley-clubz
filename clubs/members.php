@@ -45,12 +45,6 @@ ob_start();
 ?>
 <div style="max-width:720px; margin:0 auto;">
 
-  <!-- Crumbtrail -->
-  <a href="/clubs/view.php?id=<?= $clubId ?>"
-     style="color:var(--text-secondary); font-size:14px; text-decoration:none; display:block; margin-bottom:12px;">
-    ← <?= e($club['name']) ?>
-  </a>
-
 <?php
   $meetingLine  = ClubUI::formatMeetingSubtext($club);
   $subtextLines = $meetingLine !== '' ? [$meetingLine] : [];
@@ -60,7 +54,10 @@ ob_start();
     $club['name'], 'Members', $clubPhotoUrl, strtoupper(substr($club['name'], 0, 1)),
     $subtextLines,
     ClubUI::buildClubMenuItems($clubId, 'members', $canManage, $isMember, $club['name']),
-    $heroUrl
+    $heroUrl,
+    '',
+    '',
+    [['label' => $club['name'], 'href' => '/clubs/view.php?id=' . $clubId]]
 ) ?>
 <?php if ($isMember): ?>
 <?= ClubUI::leaveClubForm($clubId) ?>

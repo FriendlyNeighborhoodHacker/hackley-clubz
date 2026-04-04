@@ -47,12 +47,6 @@ ob_start();
 ?>
 <div style="max-width:720px; margin:0 auto;">
 
-  <!-- Back link -->
-  <a href="/clubs/browse.php"
-     style="color:var(--text-secondary); font-size:14px; text-decoration:none;">
-    ← Back to clubs
-  </a>
-
 <?php
   $menuItems = $isMember
       ? ClubUI::buildClubMenuItems($clubId, 'info', $canManage, true, $club['name'])
@@ -75,7 +69,8 @@ ob_start();
     $menuItems,
     $heroUrl,
     '',
-    $joinHtml
+    $joinHtml,
+    [['label' => 'Back to clubs', 'href' => '/clubs/browse.php']]
 ) ?>
 <?php if ($isMember): ?>
 <?= ClubUI::leaveClubForm($clubId) ?>

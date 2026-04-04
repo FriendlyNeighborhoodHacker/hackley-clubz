@@ -44,6 +44,11 @@ class ApplicationUI
      * @param string $heroUrl          Optional 3:1 hero banner image URL.
      * @param string $extraMenuHtml    Raw HTML appended inside the ⋯ dropdown.
      * @param string $extraActionHtml  Raw HTML placed in the flex row before ⋯.
+     * @param array  $breadcrumbs      Optional breadcrumb trail rendered between the
+     *                                 hero image and the title row.  Each entry is:
+     *                                 ['label' => 'Back to clubs', 'href' => '/clubs/browse.php']
+     *                                 The first item gets a ← prefix; subsequent items
+     *                                 are separated by ›.  Defaults to [] (none shown).
      * @return string                  Ready-to-echo HTML.
      */
     public static function titleBlock(
@@ -55,7 +60,8 @@ class ApplicationUI
         array  $menuItems,
         string $heroUrl         = '',
         string $extraMenuHtml   = '',
-        string $extraActionHtml = ''
+        string $extraActionHtml = '',
+        array  $breadcrumbs     = []
     ): string {
         $h = static fn(string $s): string =>
             htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -64,6 +70,20 @@ class ApplicationUI
 
         ob_start();
         ?>
+  <?php if (!empty($breadcrumbs)): ?>
+  <div style="font-size:14px; color:var(--text-secondary); margin-bottom:12px;">
+    <?php foreach ($breadcrumbs as $i => $crumb): ?>
+      <?php if ($i > 0): ?>
+        <span style="margin:0 4px; color:var(--border);">›</span>
+      <?php endif; ?>
+      <a href="<?= $h((string)($crumb['href'] ?? '')) ?>"
+         style="color:var(--text-secondary); text-decoration:none;">
+        <?= $i === 0 ? '← ' : '' ?><?= $h((string)($crumb['label'] ?? '')) ?>
+      </a>
+    <?php endforeach; ?>
+  </div>
+  <?php endif; ?>
+
   <?php if ($heroUrl !== ''): ?>
   <div style="border-radius:var(--radius); overflow:hidden; aspect-ratio:3/1;
               background:var(--border); margin-bottom:0;">
