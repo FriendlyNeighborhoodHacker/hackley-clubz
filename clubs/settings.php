@@ -46,7 +46,8 @@ $heroUrl  = $club['hero_public_file_id']
     : '';
 
 $pageTitle     = 'Settings — ' . $club['name'];
-$activeSidebar = 'browse-clubs';
+$activeClubId  = $clubId;
+$activeSidebar = 'club-settings';
 
 ob_start();
 ?>
@@ -350,7 +351,7 @@ function pClamp() {
 
 // ── Hero image rectangular crop ───────────────────────────────────────────
 let hImg = null, hScale = 1, hOffX = 0, hOffY = 0, hDrag = false, hLX = 0, hLY = 0;
-const HW = 600, HH = 200;
+const HW = 1800, HH = 600;
 const hCanvas = document.getElementById('heroCropCanvas');
 const hCtx    = hCanvas.getContext('2d');
 const hZoom   = document.getElementById('heroZoom');
@@ -416,8 +417,8 @@ function hClamp() {
 
 // Capture canvases on submit
 document.getElementById('settings-form').addEventListener('submit', () => {
-  if (pImg) document.getElementById('photoDataHidden').value = pCanvas.toDataURL('image/jpeg', 0.9);
-  if (hImg) document.getElementById('heroDataHidden').value  = hCanvas.toDataURL('image/jpeg', 0.9);
+  if (pImg) document.getElementById('photoDataHidden').value = pCanvas.toDataURL('image/jpeg', 0.95);
+  if (hImg) document.getElementById('heroDataHidden').value  = hCanvas.toDataURL('image/jpeg', 0.95);
 });
 
 </script>

@@ -41,7 +41,8 @@ $memberCount = (int)($club['member_count'] ?? 0);
 $initial     = strtoupper(substr($club['name'], 0, 1));
 
 $pageTitle     = $club['name'];
-$activeSidebar = 'browse-clubs';
+$activeClubId  = $clubId;
+$activeSidebar = 'club-info';
 
 ob_start();
 ?>

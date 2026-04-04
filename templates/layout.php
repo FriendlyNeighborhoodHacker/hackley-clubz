@@ -12,6 +12,7 @@ declare(strict_types=1);
  *
  * Optional variables:
  *   $activeSidebar  — string matching a sidebar item id (e.g. 'calendar', 'profile')
+ *   $activeClubId   — int club ID whose panel should auto-open on load
  *   $pageTitle      — string, shown in <title>
  */
 
@@ -48,6 +49,7 @@ if ($currentUser) {
 }
 
 $activeSidebar = $activeSidebar ?? '';
+$activeClubId  = isset($activeClubId) ? (int)$activeClubId : 0;
 $pageTitle     = isset($pageTitle) ? $pageTitle . ' — ' . $siteTitle : $siteTitle;
 $announcement  = trim((string)(Settings::get('announcement') ?? ''));
 ?>
@@ -74,18 +76,22 @@ $announcement  = trim((string)(Settings::get('announcement') ?? ''));
               ? Files::profilePhotoUrl((int)$sc['photo_public_file_id'])
               : '';
           $scInitial = strtoupper(substr($sc['name'], 0, 1));
+          $scCid     = (int)$sc['id'];
         ?>
-        <a href="/clubs/view.php?id=<?= (int)$sc['id'] ?>"
-           class="sidebar-icon-btn"
-           title="<?= e($sc['name']) ?>"
-           style="padding:2px;">
+        <button type="button"
+                id="club-icon-btn-<?= $scCid ?>"
+                class="sidebar-icon-btn<?= $activeClubId === $scCid ? ' active' : '' ?>"
+                title="<?= e($sc['name']) ?>"
+                aria-label="<?= e($sc['name']) ?>"
+                style="padding:2px; background:none; border:none; cursor:pointer;"
+                onclick="toggleClubPanel(<?= $scCid ?>)">
           <?php if ($scPhoto !== ''): ?>
             <img src="<?= e($scPhoto) ?>" alt="<?= e($sc['name']) ?>" class="sidebar-avatar">
           <?php else: ?>
             <div class="avatar-placeholder avatar-sm"
                  style="background:var(--gradient-brand);"><?= e($scInitial) ?></div>
           <?php endif; ?>
-        </a>
+        </button>
       <?php endforeach; ?>
     </div>
 
@@ -106,7 +112,6 @@ $announcement  = trim((string)(Settings::get('announcement') ?? ''));
     <a href="/clubs/events/calendar.php"
        class="sidebar-icon-btn <?= $activeSidebar === 'calendar' ? 'active' : '' ?>"
        title="Calendar" aria-label="Calendar">
-      <!-- Calendar icon (inline SVG, no external dependency) -->
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
         <line x1="16" y1="2" x2="16" y2="6"/>
@@ -179,6 +184,78 @@ $announcement  = trim((string)(Settings::get('announcement') ?? ''));
   </aside>
   <?php endif; ?>
 
+  <!-- ===== Club Panels ===== -->
+  <?php foreach ($userSidebarClubs as $sc): ?>
+    <?php
+      $scPanelPhoto  = $sc['photo_public_file_id']
+          ? Files::profilePhotoUrl((int)$sc['photo_public_file_id'])
+          : '';
+      $scPanelInitial = strtoupper(substr($sc['name'], 0, 1));
+      $scIsClubAdmin  = !empty($sc['is_club_admin']) || !empty($currentUser['is_admin']);
+      $scCid          = (int)$sc['id'];
+      $scIsActive     = ($activeClubId === $scCid);
+    ?>
+    <aside class="admin-panel<?= $scIsActive ? '' : ' panel-hidden' ?>"
+           id="club-panel-<?= $scCid ?>"
+           data-club-id="<?= $scCid ?>"
+           aria-label="<?= e($sc['name']) ?> navigation">
+
+      <div class="club-panel-header">
+        <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0; overflow:hidden;">
+          <?php if ($scPanelPhoto !== ''): ?>
+            <img src="<?= e($scPanelPhoto) ?>" class="avatar"
+                 style="width:32px; height:32px; flex-shrink:0;" alt="">
+          <?php else: ?>
+            <div class="avatar-placeholder"
+                 style="width:32px; height:32px; font-size:13px; flex-shrink:0;
+                        background:var(--gradient-brand);"><?= e($scPanelInitial) ?></div>
+          <?php endif; ?>
+          <span class="club-panel-title"
+                style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            <?= e($sc['name']) ?>
+          </span>
+        </div>
+        <button class="club-panel-toggle"
+                onclick="toggleClubPanel(<?= $scCid ?>)"
+                title="Close" aria-label="Close <?= e($sc['name']) ?> panel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <nav class="admin-panel-nav">
+        <a href="/clubs/view.php?id=<?= $scCid ?>"
+           class="admin-panel-link<?= ($scIsActive && $activeSidebar === 'club-info') ? ' active' : '' ?>">
+          Club Info
+        </a>
+        <a href="/clubs/events/index.php?id=<?= $scCid ?>"
+           class="admin-panel-link<?= ($scIsActive && $activeSidebar === 'club-events') ? ' active' : '' ?>">
+          Events
+        </a>
+        <a href="/clubs/members.php?id=<?= $scCid ?>"
+           class="admin-panel-link<?= ($scIsActive && $activeSidebar === 'club-members') ? ' active' : '' ?>">
+          Members
+        </a>
+        <?php if ($scIsClubAdmin): ?>
+          <a href="/clubs/settings.php?id=<?= $scCid ?>"
+             class="admin-panel-link<?= ($scIsActive && $activeSidebar === 'club-settings') ? ' active' : '' ?>">
+            Settings
+          </a>
+        <?php endif; ?>
+        <span class="admin-panel-link"
+              style="color:var(--text-muted); cursor:default; font-style:italic;">
+          Chat Threads
+          <small style="font-size:10px; display:block; margin-top:1px;">coming soon</small>
+        </span>
+      </nav>
+
+    </aside>
+  <?php endforeach; ?>
+
   <!-- ===== Main Content ===== -->
   <main class="main-content" id="main-content">
     <?= Flash::render() ?>
@@ -196,37 +273,48 @@ $announcement  = trim((string)(Settings::get('announcement') ?? ''));
 <?php if (isset($extraJs)) echo $extraJs; ?>
 
 <script>
-// ─── Admin panel toggle ────────────────────────────────────────────────────
-// Panel always starts closed. Opens on icon click, closes on close button.
-// Does not persist across page loads.
+// ─── Club panel toggle ─────────────────────────────────────────────────────
 (function () {
+  function closeAllPanels() {
+    document.querySelectorAll('.admin-panel').forEach(p => p.classList.add('panel-hidden'));
+    document.querySelectorAll('[id^="club-icon-btn-"]').forEach(b => b.classList.remove('active'));
+    const adminBtn = document.getElementById('admin-panel-btn');
+    if (adminBtn) {
+      adminBtn.classList.remove('active');
+      adminBtn.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  window.toggleClubPanel = function (clubId) {
+    const panel   = document.getElementById('club-panel-' + clubId);
+    const iconBtn = document.getElementById('club-icon-btn-' + clubId);
+    if (!panel) return;
+    const wasHidden = panel.classList.contains('panel-hidden');
+    closeAllPanels();
+    if (wasHidden) {
+      panel.classList.remove('panel-hidden');
+      if (iconBtn) iconBtn.classList.add('active');
+    }
+  };
+
+  // ─── Admin panel toggle ──────────────────────────────────────────────────
   const adminBtn   = document.getElementById('admin-panel-btn');
   const closeBtn   = document.getElementById('admin-panel-close');
   const adminPanel = document.getElementById('admin-panel');
-  if (!adminBtn || !adminPanel) return;
-
-  function openAdminPanel() {
-    adminPanel.classList.remove('panel-hidden');
-    adminBtn.classList.add('active');
-    adminBtn.setAttribute('aria-expanded', 'true');
-  }
-
-  function closeAdminPanel() {
-    adminPanel.classList.add('panel-hidden');
-    adminBtn.classList.remove('active');
-    adminBtn.setAttribute('aria-expanded', 'false');
-  }
-
-  adminBtn.addEventListener('click', () => {
-    if (adminPanel.classList.contains('panel-hidden')) {
-      openAdminPanel();
-    } else {
-      closeAdminPanel();
+  if (adminBtn && adminPanel) {
+    adminBtn.addEventListener('click', () => {
+      if (adminPanel.classList.contains('panel-hidden')) {
+        closeAllPanels();
+        adminPanel.classList.remove('panel-hidden');
+        adminBtn.classList.add('active');
+        adminBtn.setAttribute('aria-expanded', 'true');
+      } else {
+        closeAllPanels();
+      }
+    });
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => closeAllPanels());
     }
-  });
-
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => closeAdminPanel());
   }
 })();
 </script>

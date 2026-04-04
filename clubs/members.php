@@ -39,7 +39,8 @@ $clubPhotoUrl = $club['photo_public_file_id']
     : '';
 
 $pageTitle     = 'Members — ' . $club['name'];
-$activeSidebar = 'browse-clubs';
+$activeClubId  = $clubId;
+$activeSidebar = 'club-members';
 
 ob_start();
 ?>

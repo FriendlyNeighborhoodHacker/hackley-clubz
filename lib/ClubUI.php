@@ -21,7 +21,7 @@ class ClubUI
      * (only when $canManage is true), with the active flag set on $activePage.
      *
      * @param int    $clubId     Club ID.
-     * @param string $activePage 'info' | 'members' | 'settings' | ''
+     * @param string $activePage 'info' | 'events' | 'members' | 'settings' | ''
      * @param bool   $canManage  Whether the viewer can manage this club.
      * @return array             Array of ['label','href','active'] maps.
      */
@@ -33,9 +33,10 @@ class ClubUI
         string $clubName   = ''
     ): array {
         $all = [
-            'info'     => ['label' => '🏠 Info Page',  'href' => '/clubs/view.php?id='     . $clubId],
-            'members'  => ['label' => '👑 Members',    'href' => '/clubs/members.php?id='  . $clubId],
-            'settings' => ['label' => '⚙️ Settings',   'href' => '/clubs/settings.php?id=' . $clubId],
+            'info'     => ['label' => '🏠 Info Page',  'href' => '/clubs/view.php?id='          . $clubId],
+            'events'   => ['label' => '📅 Events',     'href' => '/clubs/events/index.php?id='  . $clubId],
+            'members'  => ['label' => '👑 Members',    'href' => '/clubs/members.php?id='       . $clubId],
+            'settings' => ['label' => '⚙️ Settings',   'href' => '/clubs/settings.php?id='      . $clubId],
         ];
 
         $items = [];
@@ -44,8 +45,8 @@ class ClubUI
             if ($key === 'settings' && !$canManage) {
                 continue;
             }
-            // Members: any club member (or admin)
-            if ($key === 'members' && !$isMember && !$canManage) {
+            // Members/Events: any club member (or admin)
+            if (in_array($key, ['members', 'events'], true) && !$isMember && !$canManage) {
                 continue;
             }
             $items[] = [

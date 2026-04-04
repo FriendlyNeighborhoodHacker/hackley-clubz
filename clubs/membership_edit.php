@@ -65,7 +65,8 @@ $initials  = strtoupper(
 if ($initials === '') $initials = strtoupper(substr($member['email'] ?? '', 0, 1));
 
 $pageTitle     = 'Edit Membership — ' . $fullName;
-$activeSidebar = 'browse-clubs';
+$activeClubId  = $clubId;
+$activeSidebar = 'club-members';
 
 ob_start();
 ?>
