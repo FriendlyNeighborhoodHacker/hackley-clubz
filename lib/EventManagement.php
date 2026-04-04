@@ -255,6 +255,84 @@ final class EventManagement {
     }
 
     // -------------------------------------------------------------------------
+    // RSVPs
+    // -------------------------------------------------------------------------
+
+    /**
+     * Batch-fetch RSVP answers for a user across multiple events.
+     *
+     * Returns an associative array keyed by event_id with values 'yes'|'maybe'|'no'.
+     * Events with no RSVP are absent from the array.
+     *
+     * @param  int   $userId
+     * @param  int[] $eventIds
+     * @return array<int,string>
+     */
+    public static function getUserRsvpsForEvents(int $userId, array $eventIds): array {
+        if (empty($eventIds)) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($eventIds), '?'));
+        $st = pdo()->prepare(
+            "SELECT event_id, answer FROM rsvps
+              WHERE user_id = ? AND event_id IN ($placeholders)"
+        );
+        $st->execute(array_merge([$userId], $eventIds));
+        $map = [];
+        foreach ($st->fetchAll() as $row) {
+            $map[(int)$row['event_id']] = $row['answer'];
+        }
+        return $map;
+    }
+
+    /**
+     * Get a single user's RSVP answer for one event, or null if none exists.
+     */
+    public static function getUserRsvp(int $eventId, int $userId): ?string {
+        $st = pdo()->prepare(
+            'SELECT answer FROM rsvps WHERE event_id = :eid AND user_id = :uid LIMIT 1'
+        );
+        $st->bindValue(':eid', $eventId, \PDO::PARAM_INT);
+        $st->bindValue(':uid', $userId,  \PDO::PARAM_INT);
+        $st->execute();
+        $row = $st->fetch();
+        return $row ? $row['answer'] : null;
+    }
+
+    /**
+     * Create or update an RSVP for the acting user.
+     *
+     * @param  string $answer  One of 'yes', 'maybe', 'no'
+     * @throws \RuntimeException on invalid answer or missing event
+     */
+    public static function setRsvp(UserContext $ctx, int $eventId, string $answer): void {
+        if (!in_array($answer, ['yes', 'maybe', 'no'], true)) {
+            throw new \RuntimeException('Invalid RSVP answer.');
+        }
+
+        $event = self::getEventById($eventId);
+        if (!$event) {
+            throw new \RuntimeException('Event not found.');
+        }
+
+        $st = pdo()->prepare(
+            'INSERT INTO rsvps (event_id, user_id, entered_by, answer, created_at, updated_at)
+             VALUES (:eid, :uid, :entered_by, :answer, NOW(), NOW())
+             ON DUPLICATE KEY UPDATE answer = VALUES(answer), updated_at = NOW()'
+        );
+        $st->bindValue(':eid',        $eventId,  \PDO::PARAM_INT);
+        $st->bindValue(':uid',        $ctx->id,  \PDO::PARAM_INT);
+        $st->bindValue(':entered_by', $ctx->id,  \PDO::PARAM_INT);
+        $st->bindValue(':answer',     $answer,   \PDO::PARAM_STR);
+        $st->execute();
+
+        ActivityLog::log($ctx, 'rsvp.set', [
+            'event_id' => $eventId,
+            'answer'   => $answer,
+        ]);
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
