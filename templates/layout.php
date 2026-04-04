@@ -316,6 +316,12 @@ $announcement  = trim((string)(Settings::get('announcement') ?? ''));
       closeBtn.addEventListener('click', () => closeAllPanels());
     }
   }
+
+  // On mobile, the panel overlays the content. Close any auto-opened panel so
+  // the user isn't blocked after clicking a nav link inside the panel.
+  if (window.matchMedia('(max-width: 768px)').matches) {
+    closeAllPanels();
+  }
 })();
 </script>
 

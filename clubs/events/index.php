@@ -286,10 +286,14 @@ ob_start();
   };
 
   // ── Celebration burst ────────────────────────────────────────────────────
-  function rsvpCelebrate(btn) {
-    const r  = btn.getBoundingClientRect();
-    const cx = r.left + r.width  / 2;
-    const cy = r.top  + r.height / 2;
+  // btn: DOM element (used for inline), OR pass null and supply cx/cy directly
+  // (used from modal where the button may be hidden by the time we animate).
+  function rsvpCelebrate(btn, cx, cy) {
+    if (btn) {
+      const r = btn.getBoundingClientRect();
+      cx = r.left + r.width  / 2;
+      cy = r.top  + r.height / 2;
+    }
 
     // Particle dots
     for (let i = 0; i < 18; i++) {
@@ -348,6 +352,11 @@ ob_start();
   window.rsvpModalSelect = function (answer) {
     _modalSelected = answer;
     ['yes', 'maybe', 'no'].forEach(a => setModalBtnStyle(a, a === answer));
+    // Celebrate immediately when the user taps Yes — before they even hit Save.
+    if (answer === 'yes') {
+      const yesBtnEl = document.getElementById('rsvp-modal-btn-yes');
+      if (yesBtnEl) rsvpCelebrate(yesBtnEl);
+    }
   };
 
   window.rsvpModalClose = function () {

@@ -397,6 +397,9 @@ When implementing modal dialogs that require server-side data or processing, fol
 (2) AJAX Endpoints: Create dedicated PHP endpoints specifically for modal functionality (e.g., `admin_event_emails.php`, `event_attendees_export.php`) that return JSON responses. These endpoints should contain only the server-side logic needed by the modal, not full page rendering
 (3) JavaScript Integration: Modal JavaScript should make AJAX calls to these dedicated endpoints rather than posting back to the current page. This keeps modal logic separate from page-specific logic, allows modals to work consistently across multiple pages, and makes the codebase more maintainable. The modal JavaScript handles success/error responses, updates modal content, and provides user feedback. Direct page links (like "Edit Event" or "Manage Volunteers") should still link directly to their respective pages without modals.
 
+## Ajax endpoing html fragments
+Ajax endpoints in general should return html fragments for the part of the page they affect so that they can replace that part of the page's html without having a full page reload.  Those parts of the page should be functionalized so that the ajax page can generate the HTML with the same logic as the original page itself.  The page should replace a section of html with the fragment returned on success and on error should put the error string in an appropriate place and handle the error in whatever way makes sense.
+
 ## Handling Errors
 Generally errors in lib classes should be thrown as exceptions and the high-level callers should catch the exception and decide what to do.  Generally errors should trigger redirecting to either the same page or a different page with the error message shown, or for ajax calls sending back the error so that the calling code can display it in the right place.
 
