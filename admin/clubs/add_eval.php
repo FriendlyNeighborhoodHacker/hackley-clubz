@@ -11,6 +11,7 @@ require_once __DIR__ . '/../../lib/Auth.php';
 require_once __DIR__ . '/../../lib/UserContext.php';
 require_once __DIR__ . '/../../lib/Files.php';
 require_once __DIR__ . '/../../lib/ClubManagement.php';
+require_once __DIR__ . '/../../lib/ConversationManagement.php';
 
 Application::init();
 Auth::requireAdmin();
@@ -65,6 +66,9 @@ try {
         $heroFileId,
         $isSecret
     );
+
+    // Seed default General + Leadership conversations for the new club
+    ConversationManagement::onClubCreated($ctx, $clubId);
 
     Flash::set('success', 'Club "' . $name . '" created successfully.');
     redirect('/admin/clubs/edit.php?id=' . $clubId);

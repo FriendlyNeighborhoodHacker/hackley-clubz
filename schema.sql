@@ -180,7 +180,7 @@ CREATE TABLE events (
   CONSTRAINT fk_events_recurrence FOREIGN KEY (recurrence_parent_id) REFERENCES events(id)       ON DELETE CASCADE,
   INDEX idx_events_starts_at          (starts_at),
   INDEX idx_events_club_id            (club_id),
-  INDEX idx_events_recurrence_parent  (ll checkedrecurrence_parent_id)
+  INDEX idx_events_recurrence_parent  (recurrence_parent_id)
 ) ENGINE=InnoDB;
 
 -- ===== RSVPs =====
@@ -200,3 +200,72 @@ CREATE TABLE rsvps (
 
 CREATE INDEX idx_rsvps_event_id ON rsvps(event_id);
 CREATE INDEX idx_rsvps_user_id  ON rsvps(user_id);
+
+-- ===== Conversations =====
+-- Each club has one or more named conversation threads.
+-- type: 'general'    — auto-created, all members added automatically
+--       'leadership' — auto-created, secret, only club admins
+--       'custom'     — admin-created; is_secret controls visibility
+CREATE TABLE conversations (
+  id                  INT AUTO_INCREMENT PRIMARY KEY,
+  club_id             INT NOT NULL,
+  name                VARCHAR(255) NOT NULL,
+  is_secret           TINYINT(1) NOT NULL DEFAULT 0,
+  type                ENUM('general','leadership','custom') NOT NULL DEFAULT 'custom',
+  created_by_user_id  INT NULL,
+  created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_conv_club    FOREIGN KEY (club_id)            REFERENCES clubs(id)  ON DELETE CASCADE,
+  CONSTRAINT fk_conv_creator FOREIGN KEY (created_by_user_id) REFERENCES users(id)  ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_conv_club_id   ON conversations(club_id);
+CREATE INDEX idx_conv_club_type ON conversations(club_id, type);
+
+-- ===== Conversation Memberships =====
+CREATE TABLE conversation_memberships (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  conversation_id INT NOT NULL,
+  user_id         INT NOT NULL,
+  joined_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_conv_membership (conversation_id, user_id),
+  CONSTRAINT fk_convm_conv FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+  CONSTRAINT fk_convm_user FOREIGN KEY (user_id)         REFERENCES users(id)         ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_convm_conv_id ON conversation_memberships(conversation_id);
+CREATE INDEX idx_convm_user_id ON conversation_memberships(user_id);
+
+-- ===== Messages =====
+-- deleted_at is a soft-delete so thread continuity is preserved ("This message was deleted").
+CREATE TABLE messages (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  conversation_id INT NOT NULL,
+  user_id         INT NULL,          -- NULL when the originating user is deleted
+  body            TEXT NOT NULL,
+  is_pinned       TINYINT(1) NOT NULL DEFAULT 0,
+  created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at      DATETIME NULL DEFAULT NULL,
+  CONSTRAINT fk_msg_conv FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+  CONSTRAINT fk_msg_user FOREIGN KEY (user_id)         REFERENCES users(id)         ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_msg_conv_created ON messages(conversation_id, created_at);
+CREATE INDEX idx_msg_user_id      ON messages(user_id);
+CREATE INDEX idx_msg_is_pinned    ON messages(conversation_id, is_pinned);
+
+-- ===== Message Reactions =====
+-- One reaction type per user per message (reaction column kept for future extensibility).
+CREATE TABLE message_reactions (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  message_id INT NOT NULL,
+  user_id    INT NOT NULL,
+  reaction   VARCHAR(20) NOT NULL DEFAULT 'heart',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_reaction (message_id, user_id, reaction),
+  CONSTRAINT fk_react_message FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+  CONSTRAINT fk_react_user    FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_react_message_id ON message_reactions(message_id);
+CREATE INDEX idx_react_user_id    ON message_reactions(user_id);

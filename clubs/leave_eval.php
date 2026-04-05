@@ -10,6 +10,7 @@ require_once __DIR__ . '/../lib/Application.php';
 require_once __DIR__ . '/../lib/Auth.php';
 require_once __DIR__ . '/../lib/UserContext.php';
 require_once __DIR__ . '/../lib/ClubManagement.php';
+require_once __DIR__ . '/../lib/ConversationManagement.php';
 
 Application::init();
 Auth::requireLogin();
@@ -47,6 +48,7 @@ if (!$club) {
 
 try {
     ClubManagement::leaveClub($ctx, $clubId);
+    ConversationManagement::onUserLeftClub($ctx, $clubId, $ctx->id);
     Flash::set('success', 'You have left ' . $club['name'] . '.');
 } catch (\RuntimeException $e) {
     Flash::set('error', $e->getMessage());

@@ -5,6 +5,7 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../lib/Application.php';
 require_once __DIR__ . '/../lib/Auth.php';
 require_once __DIR__ . '/../lib/ClubManagement.php';
+require_once __DIR__ . '/../lib/ConversationManagement.php';
 require_once __DIR__ . '/../lib/UserContext.php';
 
 Application::init();
@@ -28,6 +29,13 @@ try {
 
     $ctx = UserContext::getLoggedInUserContext();
     ClubManagement::setMemberAdminStatus($ctx, $clubId, $targetUserId, $makeAdmin);
+
+    // Keep Leadership conversation membership in sync with admin status
+    if ($makeAdmin) {
+        ConversationManagement::onUserBecameClubAdmin($ctx, $clubId, $targetUserId);
+    } else {
+        ConversationManagement::onUserLostClubAdminStatus($ctx, $clubId, $targetUserId);
+    }
 
     $label = $makeAdmin ? 'Club Leader status granted.' : 'Club Leader status removed.';
     Flash::set('success', $label);
