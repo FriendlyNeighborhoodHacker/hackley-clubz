@@ -1,4 +1,4 @@
-fy -- Migration 004: Add recurrence support to events
+-- Migration 004: Add recurrence support to events
 -- Adds recurrence_rule and recurrence_parent_id columns.
 -- recurrence_rule  : NULL = does not repeat; 'weekly' | 'monthly_nth_weekday' | 'custom'
 -- recurrence_parent_id : NULL for standalone/parent events;
