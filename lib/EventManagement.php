@@ -286,6 +286,26 @@ final class EventManagement {
     }
 
     /**
+     * Return all users who have RSVPed "yes" to an event, ordered by when they
+     * RSVPed (earliest first).  Each row contains:
+     *   id, first_name, last_name, photo_public_file_id
+     *
+     * @return array[]
+     */
+    public static function getEventAttendees(int $eventId): array {
+        $st = pdo()->prepare(
+            'SELECT u.id, u.first_name, u.last_name, u.photo_public_file_id
+             FROM rsvps r
+             JOIN users u ON u.id = r.user_id
+             WHERE r.event_id = :eid AND r.answer = \'yes\'
+             ORDER BY r.created_at ASC'
+        );
+        $st->bindValue(':eid', $eventId, \PDO::PARAM_INT);
+        $st->execute();
+        return $st->fetchAll() ?: [];
+    }
+
+    /**
      * Get a single user's RSVP answer for one event, or null if none exists.
      */
     public static function getUserRsvp(int $eventId, int $userId): ?string {

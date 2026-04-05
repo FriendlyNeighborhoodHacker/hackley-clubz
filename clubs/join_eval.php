@@ -45,11 +45,19 @@ if (!$club || $club['is_secret']) {
     redirect($returnTo);
 }
 
+$joined = false;
 try {
     ClubManagement::joinClub($ctx, $clubId);
     Flash::set('success', 'You have joined ' . $club['name'] . '!');
+    $joined = true;
 } catch (\RuntimeException $e) {
     Flash::set('error', $e->getMessage());
+}
+
+// Append celebrate flag so the destination page fires confetti on a fresh join.
+if ($joined) {
+    $separator = str_contains($returnTo, '?') ? '&' : '?';
+    $returnTo .= $separator . 'celebrate=1';
 }
 
 redirect($returnTo);

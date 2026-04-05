@@ -35,7 +35,8 @@ $isClubAdmin = ClubManagement::isUserClubAdmin($ctx->id, $clubId);
 $canManage   = $isClubAdmin || $ctx->admin;
 $isMember    = ClubManagement::isUserMember($ctx->id, $clubId);
 
-$myAnswer = EventManagement::getUserRsvp($eventId, $ctx->id);
+$myAnswer  = EventManagement::getUserRsvp($eventId, $ctx->id);
+$attendees = EventManagement::getEventAttendees($eventId);
 
 $eventPhotoUrl = $event['photo_public_file_id']
     ? Files::publicFileUrl((int)$event['photo_public_file_id'])
@@ -160,6 +161,15 @@ ob_start();
       </div>
     <?php endif; ?>
 
+    <!-- Going facepile (hr lives inside so AJAX refresh can add/remove it too) -->
+    <div id="facepile-area">
+      <?php $facepileHtml = EventUI::facepileHtml($attendees); ?>
+      <?php if ($facepileHtml !== ''): ?>
+        <hr style="border:none; border-top:1px solid var(--border); margin:20px 0;">
+        <?= $facepileHtml ?>
+      <?php endif; ?>
+    </div>
+
   </div>
 
   <?php if ($canManage): ?>
@@ -252,6 +262,19 @@ ob_start();
   let _modalEventId  = null;
   let _modalSelected = null;
 
+  const EVENT_ID = <?= json_encode($eventId) ?>;
+
+  // ── Facepile refresh ─────────────────────────────────────────────────────
+  function refreshFacepile() {
+    fetch('/clubs/events/ajax_attendees.php?event_id=' + EVENT_ID)
+      .then(r => r.text())
+      .then(html => {
+        const area = document.getElementById('facepile-area');
+        if (area) area.innerHTML = html;
+      })
+      .catch(() => {}); // facepile refresh failure is non-critical
+  }
+
   // ── Inline submit ────────────────────────────────────────────────────────
   window.rsvpSubmit = function (eventId, answer, btn) {
     const area = document.getElementById('rsvp-area-' + eventId);
@@ -263,6 +286,7 @@ ob_start();
         if (data.success) {
           if (answer === 'yes' && btn) rsvpCelebrate(btn);
           area.innerHTML = data.html;
+          refreshFacepile();
         } else {
           showAreaError(area, data.error);
           if (btn) btn.disabled = false;
@@ -354,6 +378,7 @@ ob_start();
           rsvpModalClose();
           const area = document.getElementById('rsvp-area-' + _modalEventId);
           if (area) area.innerHTML = data.html;
+          refreshFacepile();
         } else {
           const errEl = document.getElementById('rsvp-modal-error');
           if (errEl) {

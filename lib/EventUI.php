@@ -26,6 +26,113 @@ final class EventUI {
         return self::rsvpStatusHtml($eventId, $currentAnswer);
     }
 
+    /**
+     * Render the "Going (N):" facepile for a list of attendees.
+     *
+     * Each avatar is a small circle (photo or initial placeholder).
+     * Clicking an avatar toggles a small floating name badge below it.
+     * Returns '' when $attendees is empty.
+     *
+     * @param  array[] $attendees  Rows from EventManagement::getEventAttendees()
+     *                             Each row must have: id, first_name, last_name,
+     *                             photo_public_file_id (nullable)
+     */
+    public static function facepileHtml(array $attendees): string {
+        if (empty($attendees)) {
+            return '';
+        }
+
+        require_once __DIR__ . '/Files.php';
+
+        $count = count($attendees);
+        $h     = static fn(string $s): string =>
+            htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        $avatarSize = 32; // px
+
+        $html  = '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
+        $html .= '<span style="font-size:0.8rem;color:var(--text-secondary);font-weight:600;'
+               . 'white-space:nowrap;">Going (' . $count . '):</span>';
+        $html .= '<div style="display:flex;gap:-4px;flex-wrap:wrap;gap:4px;" id="facepile-avatars">';
+
+        foreach ($attendees as $i => $person) {
+            $uid       = (int)$person['id'];
+            $firstName = $h((string)($person['first_name'] ?? ''));
+            $lastName  = $h((string)($person['last_name']  ?? ''));
+            $fullName  = trim($firstName . ' ' . $lastName);
+            $initial   = strtoupper(substr($person['first_name'] ?? '', 0, 1));
+            $photoId   = $person['photo_public_file_id'] ? (int)$person['photo_public_file_id'] : null;
+            $photoUrl  = $photoId ? Files::profilePhotoUrl($photoId) : '';
+            $badgeId   = 'fp-badge-' . $uid . '-' . $i;
+
+            $html .= '<div style="position:relative;display:inline-block;" '
+                   . 'onmouseleave="document.getElementById(\'' . $badgeId . '\').style.display=\'none\'">';
+
+            // Avatar button
+            $html .= '<button type="button"'
+                   . ' title="' . $fullName . '"'
+                   . ' aria-label="' . $fullName . '"'
+                   . ' style="width:' . $avatarSize . 'px;height:' . $avatarSize . 'px;'
+                   . 'border-radius:50%;border:2px solid var(--surface);'
+                   . 'padding:0;background:none;cursor:pointer;overflow:hidden;'
+                   . 'display:flex;align-items:center;justify-content:center;'
+                   . 'box-shadow:0 1px 3px rgba(0,0,0,.15);transition:transform .15s;"'
+                   . ' onmouseenter="this.style.transform=\'scale(1.12)\'"'
+                   . ' onmouseleave="this.style.transform=\'scale(1)\'"'
+                   . ' onclick="(function(btn,id){'
+                   . 'var b=document.getElementById(id);'
+                   . 'var shown=b.style.display===\'block\';'
+                   . 'document.querySelectorAll(\'.fp-badge\').forEach(function(x){x.style.display=\'none\';});'
+                   . 'if(!shown){b.style.display=\'block\';}'
+                   . '})(this,\'' . $badgeId . '\')">';
+
+            if ($photoUrl !== '') {
+                $html .= '<img src="' . $h($photoUrl) . '" alt="' . $fullName . '"'
+                       . ' style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">';
+            } else {
+                $html .= '<div style="width:100%;height:100%;border-radius:50%;'
+                       . 'background:var(--gradient-brand);color:#fff;'
+                       . 'display:flex;align-items:center;justify-content:center;'
+                       . 'font-size:11px;font-weight:600;">'
+                       . $h($initial)
+                       . '</div>';
+            }
+
+            $html .= '</button>';
+
+            // Name badge (hidden by default, shown on click)
+            $html .= '<div id="' . $badgeId . '" class="fp-badge"'
+                   . ' style="display:none;position:absolute;top:' . ($avatarSize + 4) . 'px;left:50%;'
+                   . 'transform:translateX(-50%);'
+                   . 'background:var(--text-primary);color:#fff;'
+                   . 'font-size:11px;white-space:nowrap;'
+                   . 'padding:3px 8px;border-radius:4px;z-index:100;'
+                   . 'pointer-events:none;">'
+                   . $fullName
+                   . '</div>';
+
+            $html .= '</div>';
+        }
+
+        $html .= '</div>';
+        $html .= '</div>';
+
+        // One-time global click handler to dismiss all badges when clicking outside
+        static $scriptEmitted = false;
+        if (!$scriptEmitted) {
+            $html .= '<script>'
+                   . 'document.addEventListener("click",function(e){'
+                   . 'if(!e.target.closest("[id^=\'fp-badge-\']")&&!e.target.closest("button[onclick]")){'
+                   . 'document.querySelectorAll(".fp-badge").forEach(function(b){b.style.display="none";});'
+                   . '}'
+                   . '});'
+                   . '</script>';
+            $scriptEmitted = true;
+        }
+
+        return $html;
+    }
+
     // -----------------------------------------------------------------------
     // Private helpers
     // -----------------------------------------------------------------------

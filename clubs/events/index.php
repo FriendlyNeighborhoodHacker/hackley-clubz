@@ -47,8 +47,17 @@ ob_start();
   <?php if ($canManage): ?>
   <div style="display:flex; justify-content:flex-end; margin-bottom:24px;">
     <a href="/clubs/events/create.php?id=<?= $clubId ?>"
-       class="btn btn-primary" style="font-size:13px;">
-      + Create Event
+       title="Create Event" aria-label="Create Event"
+       style="display:inline-flex; align-items:center; justify-content:center;
+              color:var(--text-muted); text-decoration:none;
+              transition:color .15s;"
+       onmouseenter="this.style.color='var(--purple-dark)';"
+       onmouseleave="this.style.color='var(--text-muted)';">
+      <svg width="18" height="18" viewBox="0 0 14 14" fill="none"
+           xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
     </a>
   </div>
   <?php endif; ?>
