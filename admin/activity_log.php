@@ -119,54 +119,76 @@ ob_start();
     </form>
   </div>
 
-  <!-- Result count -->
-  <div style="margin-bottom:10px;color:var(--text-secondary);font-size:0.875rem;">
-    <?= number_format($total) ?> total &middot; Page <?= $qPage ?> of <?= $totalPages ?>
+  <!-- Result count + top pagination -->
+  <div style="display:flex; align-items:center; justify-content:space-between;
+              flex-wrap:wrap; gap:8px; margin-bottom:10px;
+              color:var(--text-secondary); font-size:0.875rem;">
+    <span><?= number_format($total) ?> total &middot; Page <?= $qPage ?> of <?= $totalPages ?></span>
+    <span style="display:flex; gap:6px;">
+      <?php if ($qPage > 1): ?>
+        <a href="<?= e(buildAlUrl(['page' => $qPage - 1])) ?>"
+           style="color:var(--accent-blue); text-decoration:none; font-size:0.875rem;">← Prev</a>
+      <?php else: ?>
+        <span style="color:var(--text-muted); font-size:0.875rem;">← Prev</span>
+      <?php endif; ?>
+      <span style="color:var(--border);">|</span>
+      <?php if ($qPage < $totalPages): ?>
+        <a href="<?= e(buildAlUrl(['page' => $qPage + 1])) ?>"
+           style="color:var(--accent-blue); text-decoration:none; font-size:0.875rem;">Next →</a>
+      <?php else: ?>
+        <span style="color:var(--text-muted); font-size:0.875rem;">Next →</span>
+      <?php endif; ?>
+    </span>
   </div>
 
   <?php if (empty($rows)): ?>
     <p style="color:var(--text-muted);padding:24px 0;">No activity entries found.</p>
   <?php else: ?>
-    <div class="table-wrap">
-      <table class="log-table">
-        <thead>
-          <tr>
-            <th>When</th>
-            <th>User</th>
-            <th>Action</th>
-            <th>Metadata</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($rows as $r): ?>
-            <tr>
-              <td class="log-ts"><?= e($r['created_at'] ?? '') ?></td>
-              <td>
-                <?php
-                  $uid = isset($r['user_id']) ? (int)$r['user_id'] : 0;
-                  if ($uid > 0) {
-                    echo e($userMap[$uid] ?? 'User #' . $uid);
-                  } else {
-                    echo '<span style="color:var(--text-muted)">System</span>';
-                  }
-                ?>
-              </td>
-              <td><code class="action-badge"><?= e($r['action_type'] ?? '') ?></code></td>
-              <td class="log-meta">
-                <?php
-                  $meta = (string)($r['json_metadata'] ?? '');
-                  if ($meta === '' || $meta === 'null') {
-                    echo '<span style="color:var(--text-muted)">—</span>';
-                  } else {
-                    $display = mb_strlen($meta) > 300 ? mb_substr($meta, 0, 300) . '…' : $meta;
-                    echo '<code>' . e($display) . '</code>';
-                  }
-                ?>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+    <div style="border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;">
+      <?php foreach ($rows as $i => $r): ?>
+        <?php
+          $uid = isset($r['user_id']) ? (int)$r['user_id'] : 0;
+          $userName = ($uid > 0) ? ($userMap[$uid] ?? 'User #' . $uid) : null;
+          $meta = (string)($r['json_metadata'] ?? '');
+          $hasMeta = ($meta !== '' && $meta !== 'null');
+          $metaDisplay = $hasMeta
+            ? (mb_strlen($meta) > 200 ? mb_substr($meta, 0, 200) . '…' : $meta)
+            : '';
+        ?>
+        <div style="padding:12px 16px;
+                    background:var(--surface);
+                    border-bottom:1px solid var(--border-light);
+                    <?= $i % 2 === 1 ? 'background:var(--bg);' : '' ?>">
+
+          <!-- Top row: badge + timestamp -->
+          <div style="display:flex; align-items:center; justify-content:space-between;
+                      gap:8px; flex-wrap:wrap; margin-bottom:4px;">
+            <code class="action-badge"><?= e($r['action_type'] ?? '') ?></code>
+            <span class="log-ts"><?= e($r['created_at'] ?? '') ?></span>
+          </div>
+
+          <!-- User -->
+          <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:3px;">
+            <?php if ($userName): ?>
+              <?= e($userName) ?>
+            <?php else: ?>
+              <span style="color:var(--text-muted);">System</span>
+            <?php endif; ?>
+          </div>
+
+          <!-- Metadata -->
+          <?php if ($hasMeta): ?>
+            <div style="font-size:0.75rem; color:var(--text-muted);
+                        word-break:break-all; margin-top:4px;">
+              <code style="background:var(--border-light); padding:2px 5px;
+                           border-radius:3px; font-size:0.75rem;">
+                <?= e($metaDisplay) ?>
+              </code>
+            </div>
+          <?php endif; ?>
+
+        </div>
+      <?php endforeach; ?>
     </div>
 
     <!-- Pagination -->

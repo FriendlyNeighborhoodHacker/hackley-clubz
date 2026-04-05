@@ -125,83 +125,90 @@ ob_start();
     </form>
   </div>
 
-  <!-- Result count -->
-  <div style="margin-bottom:10px;color:var(--text-secondary);font-size:0.875rem;">
-    <?= number_format($total) ?> total &middot; Page <?= $qPage ?> of <?= $totalPages ?>
+  <!-- Result count + top pagination -->
+  <div style="display:flex; align-items:center; justify-content:space-between;
+              flex-wrap:wrap; gap:8px; margin-bottom:10px;
+              color:var(--text-secondary); font-size:0.875rem;">
+    <span><?= number_format($total) ?> total &middot; Page <?= $qPage ?> of <?= $totalPages ?></span>
+    <span style="display:flex; gap:6px;">
+      <?php if ($qPage > 1): ?>
+        <a href="<?= e(buildElUrl(['page' => $qPage - 1])) ?>"
+           style="color:var(--accent-blue); text-decoration:none; font-size:0.875rem;">← Prev</a>
+      <?php else: ?>
+        <span style="color:var(--text-muted); font-size:0.875rem;">← Prev</span>
+      <?php endif; ?>
+      <span style="color:var(--border);">|</span>
+      <?php if ($qPage < $totalPages): ?>
+        <a href="<?= e(buildElUrl(['page' => $qPage + 1])) ?>"
+           style="color:var(--accent-blue); text-decoration:none; font-size:0.875rem;">Next →</a>
+      <?php else: ?>
+        <span style="color:var(--text-muted); font-size:0.875rem;">Next →</span>
+      <?php endif; ?>
+    </span>
   </div>
 
   <?php if (empty($rows)): ?>
     <p style="color:var(--text-muted);padding:24px 0;">No email entries found.</p>
   <?php else: ?>
-    <div class="table-wrap">
-      <table class="log-table">
-        <thead>
-          <tr>
-            <th>When</th>
-            <th>Sent By</th>
-            <th>To</th>
-            <th>Subject</th>
-            <th>Status</th>
-            <th>Error</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($rows as $r): ?>
-            <tr>
-              <td class="log-ts"><?= e($r['created_at'] ?? '') ?></td>
-              <td>
-                <?php
-                  $uid = isset($r['sent_by_user_id']) ? (int)$r['sent_by_user_id'] : 0;
-                  if ($uid > 0) {
-                    echo e($userMap[$uid] ?? 'User #' . $uid);
-                  } else {
-                    echo '<span style="color:var(--text-muted)">System</span>';
-                  }
-                ?>
-              </td>
-              <td class="log-ts">
-                <?php
-                  $toName  = trim((string)($r['to_name']  ?? ''));
-                  $toEmail = trim((string)($r['to_email'] ?? ''));
-                  if ($toName !== '' && $toName !== $toEmail) {
-                    echo e($toName) . '<br><small style="color:var(--text-muted)">' . e($toEmail) . '</small>';
-                  } else {
-                    echo e($toEmail);
-                  }
-                ?>
-              </td>
-              <td>
-                <a href="/admin/email_view.php?id=<?= (int)$r['id'] ?>"
-                   style="color:var(--text-primary);text-decoration:none;">
-                  <?= e($r['subject'] ?? '') ?>
-                </a>
-                <a href="/admin/email_view.php?id=<?= (int)$r['id'] ?>"
-                   style="margin-left:8px;font-size:0.75rem;color:var(--accent-blue);white-space:nowrap;">
-                  View →
-                </a>
-              </td>
-              <td>
-                <?php if (!empty($r['success'])): ?>
-                  <span class="status-success">✓ Sent</span>
-                <?php else: ?>
-                  <span class="status-failed">✗ Failed</span>
-                <?php endif; ?>
-              </td>
-              <td class="log-meta">
-                <?php
-                  $err = trim((string)($r['error_message'] ?? ''));
-                  if ($err !== '') {
-                    $display = mb_strlen($err) > 120 ? mb_substr($err, 0, 120) . '…' : $err;
-                    echo '<span style="color:var(--error)">' . e($display) . '</span>';
-                  } else {
-                    echo '<span style="color:var(--text-muted)">—</span>';
-                  }
-                ?>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+    <div style="border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;">
+      <?php foreach ($rows as $i => $r): ?>
+        <?php
+          $uid     = isset($r['sent_by_user_id']) ? (int)$r['sent_by_user_id'] : 0;
+          $sentBy  = ($uid > 0) ? ($userMap[$uid] ?? 'User #' . $uid) : null;
+          $toName  = trim((string)($r['to_name']  ?? ''));
+          $toEmail = trim((string)($r['to_email'] ?? ''));
+          $toLabel = ($toName !== '' && $toName !== $toEmail) ? $toName . ' <' . $toEmail . '>' : $toEmail;
+          $err     = trim((string)($r['error_message'] ?? ''));
+          $errDisplay = ($err !== '') ? (mb_strlen($err) > 120 ? mb_substr($err, 0, 120) . '…' : $err) : '';
+        ?>
+        <div style="padding:12px 16px;
+                    background:var(--surface);
+                    border-bottom:1px solid var(--border-light);
+                    <?= $i % 2 === 1 ? 'background:var(--bg);' : '' ?>">
+
+          <!-- Top row: subject link + timestamp -->
+          <div style="display:flex; align-items:flex-start; justify-content:space-between;
+                      gap:8px; flex-wrap:wrap; margin-bottom:4px;">
+            <div>
+              <a href="/admin/email_view.php?id=<?= (int)$r['id'] ?>"
+                 style="font-weight:600; color:var(--text-primary); text-decoration:none; font-size:0.9rem;">
+                <?= e($r['subject'] ?? '(no subject)') ?>
+              </a>
+              <a href="/admin/email_view.php?id=<?= (int)$r['id'] ?>"
+                 style="margin-left:8px; font-size:0.75rem; color:var(--accent-blue); white-space:nowrap;">
+                View →
+              </a>
+            </div>
+            <span class="log-ts" style="flex-shrink:0;"><?= e($r['created_at'] ?? '') ?></span>
+          </div>
+
+          <!-- To + Sent by -->
+          <div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:2px;">
+            To: <?= e($toLabel) ?>
+          </div>
+          <div style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:4px;">
+            Sent by:
+            <?php if ($sentBy): ?>
+              <?= e($sentBy) ?>
+            <?php else: ?>
+              <span style="color:var(--text-muted);">System</span>
+            <?php endif; ?>
+          </div>
+
+          <!-- Status + error -->
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <?php if (!empty($r['success'])): ?>
+              <span class="status-success" style="font-size:0.82rem;">✓ Sent</span>
+            <?php else: ?>
+              <span class="status-failed" style="font-size:0.82rem;">✗ Failed</span>
+            <?php endif; ?>
+            <?php if ($errDisplay !== ''): ?>
+              <span style="font-size:0.78rem; color:var(--error);"><?= e($errDisplay) ?></span>
+            <?php endif; ?>
+          </div>
+
+        </div>
+      <?php endforeach; ?>
     </div>
 
     <!-- Pagination -->

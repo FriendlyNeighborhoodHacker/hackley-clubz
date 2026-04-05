@@ -18,7 +18,7 @@ $events   = EventManagement::listUpcomingEventsForUser($ctx->id);
 $eventIds = array_map(fn($e) => (int)$e['id'], $events);
 $rsvpMap  = EventManagement::getUserRsvpsForEvents($ctx->id, $eventIds);
 
-$pageTitle     = 'My Calendar';
+$pageTitle     = 'Upcoming Events';
 $activeSidebar = 'calendar';
 
 ob_start();
@@ -28,10 +28,10 @@ ob_start();
   <div style="margin-bottom:28px;">
     <h1 style="font-family:var(--font-title); font-weight:200; font-size:1.8rem;
                 margin:0 0 4px; color:var(--text-primary);">
-      <em><strong>My Calendar</strong></em>
+      <em><strong>Upcoming Events</strong></em>
     </h1>
     <p style="font-size:0.85rem; color:var(--text-muted); margin:0;">
-      Upcoming events across all your clubs.
+      Across all of your clubs.
     </p>
   </div>
 

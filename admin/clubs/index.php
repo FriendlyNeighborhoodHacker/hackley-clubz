@@ -36,77 +36,66 @@ ob_start();
     <div class="flash flash--error"><?= e($errorMsg) ?></div>
   <?php endif; ?>
 
-  <div class="table-wrap">
-    <table class="log-table">
-      <thead>
-        <tr>
-          <th style="width:72px;"></th>
-          <th>Name</th>
-          <th>Meets</th>
-          <th>Members</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($clubs as $club): ?>
-          <?php
-            $photoUrl = ($club['photo_public_file_id'])
-              ? Files::publicFileUrl((int)$club['photo_public_file_id'])
-              : '';
-            $initial  = strtoupper(substr($club['name'], 0, 1));
-          ?>
-          <tr>
-            <td style="padding:8px 10px;">
-              <?php if ($photoUrl !== ''): ?>
-                <img src="<?= e($photoUrl) ?>" class="avatar" style="width:60px;height:60px;" alt="">
-              <?php else: ?>
-                <div class="avatar-placeholder" style="width:60px;height:60px;font-size:24px;background:var(--gradient-brand);">
-                  <?= e($initial) ?>
-                </div>
-              <?php endif; ?>
-            </td>
-            <td>
-              <a href="/admin/clubs/edit.php?id=<?= (int)$club['id'] ?>"
-                 style="color:var(--text-primary); font-weight:500;">
-                <?= e($club['name']) ?>
-              </a>
-              <?php if (!empty($club['description'])): ?>
-                <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">
-                  <?= e(mb_strimwidth($club['description'], 0, 80, '…')) ?>
-                </div>
-              <?php endif; ?>
-            </td>
-            <td style="color:var(--text-secondary); font-size:0.875rem;">
-              <?php
-                $aDays  = trim((string)($club['meeting_days']     ?? ''));
-                $aLoc   = trim((string)($club['meeting_location'] ?? ''));
-                $aParts = [];
-                if ($aDays !== '') {
-                    $dn = array_filter(explode(',', $aDays));
-                    sort($dn, SORT_NUMERIC);
-                    $aParts[] = implode(', ', array_map(fn($d) => 'Day ' . trim($d), $dn));
-                }
-                if ($aLoc !== '') $aParts[] = $aLoc;
-                $aMeets = implode(' · ', $aParts);
-              ?>
-              <?= $aMeets !== '' ? e($aMeets) : '<span style="color:var(--text-muted);">—</span>' ?>
-            </td>
-            <td style="color:var(--text-secondary);"><?= (int)$club['member_count'] ?></td>
-            <td>
-              <a href="/admin/clubs/edit.php?id=<?= (int)$club['id'] ?>"
-                 class="btn btn-secondary" style="font-size:12px; padding:5px 12px;">Edit</a>
-            </td>
-          </tr>
-        <?php endforeach; ?>
-        <?php if (empty($clubs)): ?>
-          <tr>
-            <td colspan="5" style="padding:32px; text-align:center; color:var(--text-muted);">
-              No clubs yet. <a href="/admin/clubs/add.php">Add the first one →</a>
-            </td>
-          </tr>
-        <?php endif; ?>
-      </tbody>
-    </table>
+  <div class="club-browse-grid">
+    <?php foreach ($clubs as $club): ?>
+      <?php
+        $photoUrl = ($club['photo_public_file_id'])
+          ? Files::publicFileUrl((int)$club['photo_public_file_id'])
+          : '';
+        $initial  = strtoupper(substr($club['name'], 0, 1));
+
+        $aDays  = trim((string)($club['meeting_days']     ?? ''));
+        $aLoc   = trim((string)($club['meeting_location'] ?? ''));
+        $aParts = [];
+        if ($aDays !== '') {
+            $dn = array_filter(explode(',', $aDays));
+            sort($dn, SORT_NUMERIC);
+            $aParts[] = implode(', ', array_map(fn($d) => 'Day ' . trim($d), $dn));
+        }
+        if ($aLoc !== '') $aParts[] = $aLoc;
+        $aMeets = implode(' · ', $aParts);
+      ?>
+      <div class="club-browse-card">
+        <!-- Photo -->
+        <div class="club-browse-photo-link" style="flex-shrink:0;">
+          <?php if ($photoUrl !== ''): ?>
+            <img src="<?= e($photoUrl) ?>" class="avatar" style="width:52px;height:52px;" alt="">
+          <?php else: ?>
+            <div class="avatar-placeholder" style="width:52px;height:52px;font-size:20px;">
+              <?= e($initial) ?>
+            </div>
+          <?php endif; ?>
+        </div>
+
+        <!-- Info stack -->
+        <div class="club-browse-info">
+          <a href="/admin/clubs/edit.php?id=<?= (int)$club['id'] ?>"
+             style="font-weight:600; color:var(--text-primary); text-decoration:none; font-size:0.95rem;">
+            <?= e($club['name']) ?>
+          </a>
+          <?php if ($aMeets !== ''): ?>
+            <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:2px;">
+              <?= e($aMeets) ?>
+            </div>
+          <?php endif; ?>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
+            <?= (int)$club['member_count'] ?> member<?= $club['member_count'] == 1 ? '' : 's' ?>
+          </div>
+        </div>
+
+        <!-- Action -->
+        <div class="club-browse-action">
+          <a href="/admin/clubs/edit.php?id=<?= (int)$club['id'] ?>"
+             class="btn btn-secondary" style="font-size:12px; padding:5px 12px;">Edit</a>
+        </div>
+      </div>
+    <?php endforeach; ?>
+
+    <?php if (empty($clubs)): ?>
+      <div style="padding:32px; text-align:center; color:var(--text-muted);">
+        No clubs yet. <a href="/admin/clubs/add.php">Add the first one →</a>
+      </div>
+    <?php endif; ?>
   </div>
 
 </div>

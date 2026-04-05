@@ -64,22 +64,22 @@ ob_start();
       <a href="/profile/edit.php" class="btn btn-secondary" style="padding:8px 16px; font-size:14px;">Edit Profile</a>
     </div>
 
-    <dl style="display:grid; grid-template-columns:140px 1fr; gap:12px 16px; font-size:0.9rem;">
-      <dt style="color:var(--text-muted);">First name</dt>
+    <dl class="profile-dl">
+      <dt>First name</dt>
       <dd><?= e($user['first_name'] ?? '—') ?></dd>
 
-      <dt style="color:var(--text-muted);">Last name</dt>
+      <dt>Last name</dt>
       <dd><?= e($user['last_name'] ?? '—') ?></dd>
 
-      <dt style="color:var(--text-muted);">Email</dt>
+      <dt>Email</dt>
       <dd><?= e($user['email'] ?? '') ?></dd>
 
       <?php if (!empty($user['phone'])): ?>
-      <dt style="color:var(--text-muted);">Phone</dt>
+      <dt>Phone</dt>
       <dd><?= e($user['phone']) ?></dd>
       <?php endif; ?>
 
-      <dt style="color:var(--text-muted);">Member since</dt>
+      <dt>Member since</dt>
       <dd><?= e(date('F j, Y', strtotime($user['created_at'] ?? 'now'))) ?></dd>
     </dl>
   </div>
