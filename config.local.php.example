@@ -38,3 +38,12 @@ define('SMTP_FROM_NAME',  'Hackley Clubz');
 // Email debug mode — when true, emails are simulated (not actually sent) and logged.
 // IMPORTANT: Set to false in production.
 define('EMAIL_DEBUG_MODE', false);
+
+// ===== OpenAI =====
+// Used for AI-generated club profile photos.
+// Obtain a key at https://platform.openai.com/api-keys
+define('OPENAI_API_KEY', '');
+
+// Set to true to enable the "Generate with AI" button on the Club Settings page.
+// Requires OPENAI_API_KEY to be set.
+define('ENABLE_AI_PHOTO_GENERATION', false);

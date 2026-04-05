@@ -49,6 +49,8 @@ $pageTitle     = 'Settings — ' . $club['name'];
 $activeClubId  = $clubId;
 $activeSidebar = 'club-settings';
 
+$aiEnabled = defined('ENABLE_AI_PHOTO_GENERATION') && ENABLE_AI_PHOTO_GENERATION;
+
 ob_start();
 ?>
 <style>
@@ -200,13 +202,27 @@ ob_start();
       <?php endif; ?>
 
       <div id="photoUploadArea" class="photo-upload-area"
-           style="text-align:center; cursor:pointer; margin-bottom:12px;"
+           style="text-align:center; cursor:pointer; margin-bottom:4px;"
            onclick="document.getElementById('photoFileInput').click()">
         <p style="font-size:0.85rem; color:var(--text-secondary);">
           <?= $photoUrl !== '' ? 'Upload a replacement photo' : 'Click to choose a photo' ?>
         </p>
         <p style="font-size:11px; color:var(--text-muted); margin-top:4px;">JPEG, PNG, WebP</p>
       </div>
+      <?php if ($aiEnabled): ?>
+      <div id="aiPhotoLinkRow" style="text-align:center; margin-bottom:12px;">
+        <button type="button" onclick="openAiPhotoModal()"
+                style="background:none; border:none; cursor:pointer; font-size:12px;
+                       color:var(--accent-blue); padding:4px 0;
+                       display:inline-flex; align-items:center; gap:4px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          Generate with AI
+        </button>
+      </div>
+      <?php endif; ?>
 
       <div id="photoCropSection" style="display:none; text-align:center;">
         <div class="crop-circle-wrap">
@@ -220,6 +236,12 @@ ob_start();
                 onclick="document.getElementById('photoFileInput').click()">
           Choose different photo
         </button>
+        <?php if ($aiEnabled): ?>
+        <button type="button" class="btn btn-secondary" style="font-size:13px; margin-bottom:8px;"
+                onclick="openAiPhotoModal()">
+          ✨ Generate different photo
+        </button>
+        <?php endif; ?>
         <button type="submit" class="btn btn-primary" style="font-size:13px; margin-top:4px; margin-bottom:8px;">
           Save Photo
         </button>
@@ -289,6 +311,65 @@ ob_start();
   </form>
 
 </div>
+
+<?php if ($aiEnabled): ?>
+<!-- ── AI Photo Generation Modal ─────────────────────────────────────────── -->
+<div id="ai-photo-modal"
+     style="display:none; position:fixed; inset:0; z-index:2000;
+            background:rgba(0,0,0,.5); align-items:center; justify-content:center;">
+  <div style="background:var(--surface); border-radius:var(--radius); padding:28px 24px;
+              width:90%; max-width:440px; box-shadow:0 8px 32px rgba(0,0,0,.25);">
+    <h3 style="margin:0 0 6px; font-size:1rem; font-weight:700; display:flex; align-items:center; gap:6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+      Generate a profile photo
+    </h3>
+    <p style="font-size:0.8rem; color:var(--text-muted); margin:0 0 14px;">
+      Describe what you'd like. Edit the prompt below, then click Generate.
+    </p>
+
+    <textarea id="ai-prompt-input" rows="5"
+              style="width:100%; box-sizing:border-box; font-size:13px;
+                     border:1px solid var(--border); border-radius:var(--radius-sm);
+                     padding:10px 12px; resize:vertical; font-family:inherit;
+                     background:var(--surface); color:var(--text-primary);"
+    ><?= e('Please generate an image for a small icon for a high school club at'
+         . ' Hackley High School.  It should be simple, because it needs to appear'
+         . ' in a small icon, and clean. No words! No complex background. '
+         . ' Solid white background. If a silhouette of a person makes sense, please do that. '
+         . ' Here is'
+         . ' the club name: "'
+         . $club['name']
+         . '"') ?></textarea>
+
+    <div id="ai-photo-error"
+         style="display:none; color:var(--error,#ef4444); font-size:12px; margin-top:8px;"></div>
+
+    <div id="ai-generating-msg"
+         style="display:none; font-size:13px; color:var(--text-secondary);
+                margin-top:10px; text-align:center;">
+      <span style="display:inline-block; animation:spin 1s linear infinite; margin-right:6px;">⏳</span>
+      Generating… this usually takes 60 seconds.
+    </div>
+
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:16px;">
+      <button type="button" id="ai-cancel-btn" onclick="closeAiPhotoModal()"
+              class="btn btn-secondary" style="font-size:13px;">
+        Cancel
+      </button>
+      <button type="button" id="ai-generate-btn" onclick="generateAiPhoto()"
+              class="btn btn-primary" style="font-size:13px;">
+        Generate →
+      </button>
+    </div>
+  </div>
+</div>
+<style>
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+<?php endif; ?>
 
 <script>
 // ── Profile photo circular crop ────────────────────────────────────────────
@@ -420,6 +501,101 @@ document.getElementById('settings-form').addEventListener('submit', () => {
   if (pImg) document.getElementById('photoDataHidden').value = pCanvas.toDataURL('image/jpeg', 0.95);
   if (hImg) document.getElementById('heroDataHidden').value  = hCanvas.toDataURL('image/jpeg', 0.95);
 });
+
+<?php if ($aiEnabled): ?>
+// ── AI photo generation ────────────────────────────────────────────────────
+const AI_CSRF = <?= json_encode(csrf_token()) ?>;
+
+function openAiPhotoModal() {
+  const modal = document.getElementById('ai-photo-modal');
+  modal.style.display = 'flex';
+  document.getElementById('ai-photo-error').style.display = 'none';
+  document.getElementById('ai-generating-msg').style.display = 'none';
+  document.getElementById('ai-prompt-input').disabled = false;
+  document.getElementById('ai-generate-btn').disabled = false;
+  document.getElementById('ai-cancel-btn').disabled   = false;
+}
+
+function closeAiPhotoModal() {
+  document.getElementById('ai-photo-modal').style.display = 'none';
+}
+
+function generateAiPhoto() {
+  const promptEl  = document.getElementById('ai-prompt-input');
+  const errorEl   = document.getElementById('ai-photo-error');
+  const genMsg    = document.getElementById('ai-generating-msg');
+  const genBtn    = document.getElementById('ai-generate-btn');
+  const cancelBtn = document.getElementById('ai-cancel-btn');
+  const prompt    = promptEl.value.trim();
+
+  errorEl.style.display  = 'none';
+  errorEl.textContent    = '';
+
+  if (!prompt) {
+    errorEl.textContent   = 'Please enter a prompt.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  // Disable UI, show generating message
+  promptEl.disabled  = true;
+  genBtn.disabled    = true;
+  cancelBtn.disabled = true;
+  genMsg.style.display = 'block';
+
+  fetch('/clubs/ajax_generate_ai_photo.php', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body:    new URLSearchParams({ prompt, _csrf_token: AI_CSRF }),
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        closeAiPhotoModal();
+        initPhotoCropFromDataUrl(data.data_url);
+        // Hide the AI button row once the crop UI is showing
+        document.getElementById('aiPhotoLinkRow').style.display = 'none';
+      } else {
+        errorEl.textContent   = data.error || 'Something went wrong. Please try again.';
+        errorEl.style.display = 'block';
+        promptEl.disabled     = false;
+        genBtn.disabled       = false;
+        cancelBtn.disabled    = false;
+        genMsg.style.display  = 'none';
+      }
+    })
+    .catch(() => {
+      errorEl.textContent   = 'Network error. Please try again.';
+      errorEl.style.display = 'block';
+      promptEl.disabled     = false;
+      genBtn.disabled       = false;
+      cancelBtn.disabled    = false;
+      genMsg.style.display  = 'none';
+    });
+}
+
+// Load a data URL directly into the circular crop UI (same as initPhotoCrop but no FileReader).
+function initPhotoCropFromDataUrl(dataUrl) {
+  pImg = new Image();
+  pImg.onload = () => {
+    pScale = Math.max(PC / pImg.width, PC / pImg.height);
+    pOffX  = (PC - pImg.width  * pScale) / 2;
+    pOffY  = (PC - pImg.height * pScale) / 2;
+    pZoom.value = pScale;
+    pZoom.min   = Math.max(0.1, pScale * 0.5);
+    pZoom.max   = pScale * 4;
+    document.getElementById('photoUploadArea').style.display  = 'none';
+    document.getElementById('photoCropSection').style.display = 'block';
+    pDraw();
+  };
+  pImg.src = dataUrl;
+}
+
+// Close modal on backdrop click
+document.getElementById('ai-photo-modal').addEventListener('click', function (e) {
+  if (e.target === this) closeAiPhotoModal();
+});
+<?php endif; ?>
 
 </script>
 <?php
