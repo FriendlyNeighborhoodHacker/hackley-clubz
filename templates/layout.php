@@ -336,7 +336,12 @@ $_navBtnInitial  = $_activeClubRow ? strtoupper(substr($_activeClubRow['name'], 
 
 <?php if (isset($extraJs)) echo $extraJs; ?>
 
-<?php if (!empty($_GET['celebrate'])): ?>
+<?php
+// Consume the session confetti flag — set by join_eval.php on a successful join.
+$_layoutConfetti = !empty($_SESSION['_confetti']);
+if ($_layoutConfetti) unset($_SESSION['_confetti']);
+?>
+<?php if ($_layoutConfetti): ?>
 <script>
 /* ── Club-join confetti ──────────────────────────────────────────────────── */
 (function () {
