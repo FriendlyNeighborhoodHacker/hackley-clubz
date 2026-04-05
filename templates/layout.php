@@ -67,6 +67,35 @@ $_navBtnPhotoUrl = ($_activeClubRow && $_activeClubRow['photo_public_file_id'])
     ? Files::profilePhotoUrl((int)$_activeClubRow['photo_public_file_id'])
     : '';
 $_navBtnInitial  = $_activeClubRow ? strtoupper(substr($_activeClubRow['name'], 0, 1)) : '';
+
+// ── Topbar context: icon HTML + title text ─────────────────────────────────
+$_isAdminPage = (strpos($_SERVER['REQUEST_URI'] ?? '', '/admin/') !== false);
+
+if ($activeClubId > 0 && $_activeClubRow) {
+    $_topbarTitle   = $_activeClubRow['name'];
+    $_topbarIconHtml = $_navBtnPhotoUrl !== ''
+        ? '<img src="' . e($_navBtnPhotoUrl) . '" alt="">'
+        : '<div style="width:100%;height:100%;background:var(--gradient-brand);color:#fff;'
+          . 'display:flex;align-items:center;justify-content:center;'
+          . 'font-size:13px;font-weight:700;">' . e($_navBtnInitial) . '</div>';
+} elseif ($_isAdminPage) {
+    $_topbarTitle    = 'Admin';
+    $_topbarIconHtml = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"'
+        . ' stroke="currentColor" stroke-width="1.8" stroke-linecap="round"'
+        . ' stroke-linejoin="round" aria-hidden="true">'
+        . '<circle cx="12" cy="12" r="3"/>'
+        . '<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41'
+        . 'M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>'
+        . '</svg>';
+} else {
+    $fn = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+    $_topbarTitle    = $fn !== '' ? $fn : ($currentUser['email'] ?? 'Me');
+    $_topbarIconHtml = $photoUrl !== ''
+        ? '<img src="' . e($photoUrl) . '" alt="">'
+        : '<div style="width:100%;height:100%;background:var(--gradient-brand);color:#fff;'
+          . 'display:flex;align-items:center;justify-content:center;'
+          . 'font-size:13px;font-weight:700;">' . e($initials) . '</div>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -78,39 +107,17 @@ $_navBtnInitial  = $_activeClubRow ? strtoupper(substr($_activeClubRow['name'], 
 </head>
 <body>
 
-<div class="app-shell<?= $activeClubId > 0 ? ' sidebars-hidden' : '' ?>"<?= $activeClubId > 0 ? ' data-club-page="1"' : '' ?>>
+<div class="app-shell">
 
-  <?php if ($activeClubId > 0): ?>
-  <!-- Floating club-nav button: shown when sidebars are hidden on club pages -->
-  <button id="club-nav-toggle"
-          title="Open navigation"
-          aria-label="Open club navigation"
-          onclick="openClubNavFromFloatingBtn(<?= $activeClubId ?>)">
-    <?php if ($_navBtnPhotoUrl !== ''): ?>
-      <img src="<?= e($_navBtnPhotoUrl) ?>" alt=""
-           style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">
-    <?php else: ?>
-      <div style="width:100%;height:100%;border-radius:50%;
-                  background:var(--gradient-brand);color:#fff;
-                  display:flex;align-items:center;justify-content:center;
-                  font-size:14px;font-weight:600;"><?= e($_navBtnInitial) ?></div>
-    <?php endif; ?>
-    <!-- Hamburger badge: hints this is a nav button -->
-    <div aria-hidden="true"
-         style="position:absolute;bottom:-2px;right:-2px;
-                width:16px;height:16px;border-radius:50%;
-                background:#fff;border:1.5px solid var(--border);
-                display:flex;align-items:center;justify-content:center;
-                pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.15);">
-      <svg width="9" height="7" viewBox="0 0 9 7" fill="none"
-           xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <line x1="0.5" y1="0.75" x2="8.5" y2="0.75" stroke="#555" stroke-width="1.3" stroke-linecap="round"/>
-        <line x1="0.5" y1="3.5"  x2="8.5" y2="3.5"  stroke="#555" stroke-width="1.3" stroke-linecap="round"/>
-        <line x1="0.5" y1="6.25" x2="8.5" y2="6.25" stroke="#555" stroke-width="1.3" stroke-linecap="round"/>
-      </svg>
-    </div>
-  </button>
-  <?php endif; ?>
+  <!-- ===== Top Bar (Full Width mode) ===== -->
+  <header class="topbar" id="topbar">
+    <button class="topbar-nav-btn"
+            onclick="enterMenuLayout(<?= json_encode($activeClubId) ?>)"
+            title="Open navigation" aria-label="Open navigation">
+      <?= $_topbarIconHtml ?>
+    </button>
+    <span class="topbar-title"><?= e($_topbarTitle) ?></span>
+  </header>
 
   <!-- ===== Left Icon Sidebar ===== -->
   <nav class="sidebar" aria-label="Main navigation">
@@ -154,6 +161,17 @@ $_navBtnInitial  = $_activeClubRow ? strtoupper(substr($_activeClubRow['name'], 
     </a>
 
     <div class="sidebar-spacer"></div>
+
+    <!-- Collapse to Full Width — up-chevron above calendar -->
+    <button type="button"
+            class="sidebar-icon-btn sidebar-collapse-btn"
+            title="Hide menu" aria-label="Switch to full width view"
+            onclick="enterFullWidth()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="18 15 12 9 6 15"/>
+      </svg>
+    </button>
 
     <!-- Calendar -->
     <a href="/clubs/events/calendar.php"
@@ -325,23 +343,6 @@ $_navBtnInitial  = $_activeClubRow ? strtoupper(substr($_activeClubRow['name'], 
         <span class="announcement-text"><?= e($announcement) ?></span>
       </div>
     <?php endif; ?>
-    <?php
-      // On club pages, show a centered bold section heading above the content.
-      $_sidebarLabels = [
-          'club-info'     => 'Club Info',
-          'club-events'   => 'Events',
-          'club-members'  => 'Members',
-          'club-settings' => 'Settings',
-      ];
-      $_sectionLabel = ($activeClubId > 0 && isset($_sidebarLabels[$activeSidebar]))
-          ? $_sidebarLabels[$activeSidebar]
-          : '';
-    ?>
-    <?php if ($_sectionLabel !== ''): ?>
-      <div id="club-page-title" aria-hidden="true">
-        <?= e($_sectionLabel) ?>
-      </div>
-    <?php endif; ?>
     <?= $content ?? '' ?>
   </main>
 
@@ -485,92 +486,122 @@ if ($_layoutConfetti) unset($_SESSION['_confetti']);
 <?php endif; ?>
 
 <script>
-// ─── Club panel toggle ─────────────────────────────────────────────────────
+// ─── Navigation mode + panel toggle ──────────────────────────────────────
 (function () {
-  // On club pages ($activeClubId > 0) the app-shell starts with .sidebars-hidden
-  // so the content fills the whole viewport.  The floating #club-nav-toggle button
-  // (top-left corner) reveals the sidebar + club panel.  Closing the panel via the
-  // ✕ button or clicking the same icon again returns to full-width mode.
+  var shell        = document.querySelector('.app-shell');
+  var activeClubId = <?= json_encode($activeClubId) ?>;
 
-  function isClubPage() {
-    const shell = document.querySelector('.app-shell');
-    return shell ? shell.hasAttribute('data-club-page') : false;
+  // ── Always start with all panels closed (server may render one open) ─────
+  closeAllPanels();
+
+  // ── Set initial mode based on viewport width ────────────────────────────
+  // Desktop (≥ 769px): Menu Layout — show sidebar, open active club panel.
+  // Mobile  (< 769px): Full Width  — CSS default, no extra class needed.
+  if (window.innerWidth >= 769) {
+    shell.classList.add('nav-menu');
+    if (activeClubId > 0) {
+      var initPanel   = document.getElementById('club-panel-' + activeClubId);
+      var initIconBtn = document.getElementById('club-icon-btn-' + activeClubId);
+      if (initPanel)   initPanel.classList.remove('panel-hidden');
+      if (initIconBtn) initIconBtn.classList.add('active');
+    }
   }
 
-  function hideSidebarsIfClubPage() {
-    if (!isClubPage()) return;
-    const shell = document.querySelector('.app-shell');
-    if (shell) shell.classList.add('sidebars-hidden');
-  }
+  // ── Responsive resize: switch modes when crossing the 769px threshold ───
+  var _resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(function () {
+      if (window.innerWidth < 769) {
+        // Shrank to mobile — switch to Full Width
+        if (shell.classList.contains('nav-menu')) {
+          closeAllPanels();
+          shell.classList.remove('nav-menu');
+        }
+      } else {
+        // Expanded to desktop — switch to Menu Layout
+        if (!shell.classList.contains('nav-menu')) {
+          shell.classList.add('nav-menu');
+          if (activeClubId > 0) {
+            var rp = document.getElementById('club-panel-' + activeClubId);
+            var rb = document.getElementById('club-icon-btn-' + activeClubId);
+            if (rp) rp.classList.remove('panel-hidden');
+            if (rb) rb.classList.add('active');
+          }
+        }
+      }
+    }, 100);
+  });
 
+  // ── Shared helper: close every panel without changing nav mode ──────────
   function closeAllPanels() {
-    document.querySelectorAll('.admin-panel').forEach(p => p.classList.add('panel-hidden'));
-    document.querySelectorAll('[id^="club-icon-btn-"]').forEach(b => b.classList.remove('active'));
-    const adminBtn = document.getElementById('admin-panel-btn');
+    document.querySelectorAll('.admin-panel').forEach(function (p) {
+      p.classList.add('panel-hidden');
+    });
+    document.querySelectorAll('[id^="club-icon-btn-"]').forEach(function (b) {
+      b.classList.remove('active');
+    });
+    var adminBtn = document.getElementById('admin-panel-btn');
     if (adminBtn) {
       adminBtn.classList.remove('active');
       adminBtn.setAttribute('aria-expanded', 'false');
     }
   }
 
-  window.toggleClubPanel = function (clubId) {
-    const panel   = document.getElementById('club-panel-' + clubId);
-    const iconBtn = document.getElementById('club-icon-btn-' + clubId);
-    if (!panel) return;
-    const wasHidden = panel.classList.contains('panel-hidden');
+  // ── Enter Full Width mode (topbar visible, sidebar hidden) ───────────────
+  window.enterFullWidth = function () {
     closeAllPanels();
-    if (wasHidden) {
-      // Opening a panel — make sure the sidebar rail is visible
-      const shell = document.querySelector('.app-shell');
-      if (shell) shell.classList.remove('sidebars-hidden');
-      panel.classList.remove('panel-hidden');
-      if (iconBtn) iconBtn.classList.add('active');
-    } else {
-      // Closing the last panel — on club pages return to full-width mode
-      hideSidebarsIfClubPage();
+    shell.classList.remove('nav-menu');
+  };
+
+  // ── Enter Menu Layout mode (sidebar visible, topbar hidden) ─────────────
+  // clubId: if > 0, also open that club's panel immediately.
+  window.enterMenuLayout = function (clubId) {
+    shell.classList.add('nav-menu');
+    clubId = clubId || 0;
+    if (clubId > 0) {
+      closeAllPanels();
+      var p = document.getElementById('club-panel-' + clubId);
+      var b = document.getElementById('club-icon-btn-' + clubId);
+      if (p) p.classList.remove('panel-hidden');
+      if (b) b.classList.add('active');
     }
   };
 
-  // ── Floating nav button (club pages only) ────────────────────────────────
-  window.openClubNavFromFloatingBtn = function (clubId) {
-    // Show the icon rail, then open the panel
-    const shell = document.querySelector('.app-shell');
-    if (shell) shell.classList.remove('sidebars-hidden');
-    toggleClubPanel(clubId);
+  // ── Toggle a club panel (clicking its icon in the sidebar) ──────────────
+  window.toggleClubPanel = function (clubId) {
+    var panel   = document.getElementById('club-panel-' + clubId);
+    var iconBtn = document.getElementById('club-icon-btn-' + clubId);
+    if (!panel) return;
+    var wasHidden = panel.classList.contains('panel-hidden');
+    closeAllPanels();
+    if (wasHidden) {
+      panel.classList.remove('panel-hidden');
+      if (iconBtn) iconBtn.classList.add('active');
+    }
+    // Closing a panel does NOT exit menu-layout mode
   };
 
-  // ─── Admin panel toggle ──────────────────────────────────────────────────
-  const adminBtn   = document.getElementById('admin-panel-btn');
-  const closeBtn   = document.getElementById('admin-panel-close');
-  const adminPanel = document.getElementById('admin-panel');
+  // ── Admin panel toggle ───────────────────────────────────────────────────
+  var adminBtn   = document.getElementById('admin-panel-btn');
+  var adminClose = document.getElementById('admin-panel-close');
+  var adminPanel = document.getElementById('admin-panel');
   if (adminBtn && adminPanel) {
-    adminBtn.addEventListener('click', () => {
+    adminBtn.addEventListener('click', function () {
       if (adminPanel.classList.contains('panel-hidden')) {
         closeAllPanels();
-        const shell = document.querySelector('.app-shell');
-        if (shell) shell.classList.remove('sidebars-hidden');
         adminPanel.classList.remove('panel-hidden');
         adminBtn.classList.add('active');
         adminBtn.setAttribute('aria-expanded', 'true');
       } else {
         closeAllPanels();
-        hideSidebarsIfClubPage();
       }
     });
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => {
-        closeAllPanels();
-        hideSidebarsIfClubPage();
-      });
+    if (adminClose) {
+      adminClose.addEventListener('click', function () { closeAllPanels(); });
     }
   }
 
-  // On mobile, close any auto-opened panel so the user isn't blocked after
-  // clicking a nav link inside the panel.
-  if (window.matchMedia('(max-width: 768px)').matches) {
-    closeAllPanels();
-    // Don't hide sidebars on mobile — the sidebar is already off-screen
-  }
 })();
 </script>
 
