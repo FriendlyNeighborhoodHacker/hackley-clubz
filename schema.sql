@@ -155,23 +155,32 @@ CREATE INDEX idx_cm_user_id ON club_memberships(user_id);
 
 -- ===== Events =====
 CREATE TABLE events (
-  id                   INT AUTO_INCREMENT PRIMARY KEY,
-  club_id              INT NOT NULL,
-  name                 VARCHAR(255) NOT NULL,
-  starts_at            DATETIME NOT NULL,
-  ends_at              DATETIME DEFAULT NULL,
-  location_name        VARCHAR(255) DEFAULT NULL,
-  location_address     TEXT DEFAULT NULL,
-  google_maps_url      VARCHAR(512) DEFAULT NULL,
-  description          TEXT DEFAULT NULL,
-  photo_public_file_id INT NULL,
-  created_by_user_id   INT NULL,
-  created_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_events_club  FOREIGN KEY (club_id)            REFERENCES clubs(id)        ON DELETE CASCADE,
-  CONSTRAINT fk_events_photo FOREIGN KEY (photo_public_file_id) REFERENCES public_files(id) ON DELETE SET NULL,
-  CONSTRAINT fk_events_creator FOREIGN KEY (created_by_user_id)  REFERENCES users(id)       ON DELETE SET NULL,
-  INDEX idx_events_starts_at (starts_at),
-  INDEX idx_events_club_id   (club_id)
+  id                    INT AUTO_INCREMENT PRIMARY KEY,
+  club_id               INT NOT NULL,
+  name                  VARCHAR(255) NOT NULL,
+  starts_at             DATETIME NOT NULL,
+  ends_at               DATETIME DEFAULT NULL,
+  location_name         VARCHAR(255) DEFAULT NULL,
+  location_address      TEXT DEFAULT NULL,
+  google_maps_url       VARCHAR(512) DEFAULT NULL,
+  description           TEXT DEFAULT NULL,
+  photo_public_file_id  INT NULL,
+  created_by_user_id    INT NULL,
+  -- Recurrence: NULL rule means the event does not repeat.
+  -- 'weekly' | 'monthly_nth_weekday' | 'custom'
+  -- recurrence_parent_id is NULL for standalone/parent events;
+  -- child occurrences point back to the first (parent) event.
+  -- Deleting the parent cascades to all children.
+  recurrence_rule       VARCHAR(50) NULL DEFAULT NULL,
+  recurrence_parent_id  INT         NULL DEFAULT NULL,
+  created_at            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_events_club       FOREIGN KEY (club_id)              REFERENCES clubs(id)        ON DELETE CASCADE,
+  CONSTRAINT fk_events_photo      FOREIGN KEY (photo_public_file_id) REFERENCES public_files(id) ON DELETE SET NULL,
+  CONSTRAINT fk_events_creator    FOREIGN KEY (created_by_user_id)   REFERENCES users(id)        ON DELETE SET NULL,
+  CONSTRAINT fk_events_recurrence FOREIGN KEY (recurrence_parent_id) REFERENCES events(id)       ON DELETE CASCADE,
+  INDEX idx_events_starts_at          (starts_at),
+  INDEX idx_events_club_id            (club_id),
+  INDEX idx_events_recurrence_parent  (ll checkedrecurrence_parent_id)
 ) ENGINE=InnoDB;
 
 -- ===== RSVPs =====

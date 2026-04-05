@@ -34,13 +34,19 @@ function parseDatetimeLocal(string $raw): string {
     }
 }
 
-$name          = trim((string)($_POST['name'] ?? ''));
-$startsAt      = parseDatetimeLocal($_POST['starts_at'] ?? '');
-$endsAt        = parseDatetimeLocal($_POST['ends_at'] ?? '');
-$locationName  = trim((string)($_POST['location_name'] ?? ''));
-$locationAddr  = trim((string)($_POST['location_address'] ?? ''));
-$googleMapsUrl = trim((string)($_POST['google_maps_url'] ?? ''));
-$description   = trim((string)($_POST['description'] ?? ''));
+$name           = trim((string)($_POST['name'] ?? ''));
+$startsAt       = parseDatetimeLocal($_POST['starts_at'] ?? '');
+$endsAt         = parseDatetimeLocal($_POST['ends_at'] ?? '');
+$locationName   = trim((string)($_POST['location_name'] ?? ''));
+$locationAddr   = trim((string)($_POST['location_address'] ?? ''));
+$googleMapsUrl  = trim((string)($_POST['google_maps_url'] ?? ''));
+$description    = trim((string)($_POST['description'] ?? ''));
+
+$recurrenceRule = trim((string)($_POST['recurrence_rule'] ?? 'none'));
+$validRules     = ['none', 'weekly', 'monthly_nth_weekday', 'custom'];
+if (!in_array($recurrenceRule, $validRules, true)) {
+    $recurrenceRule = 'none';
+}
 
 if ($name === '') {
     Flash::set('error', 'Event name is required.');
@@ -65,20 +71,53 @@ try {
         );
     }
 
-    $eventId = EventManagement::createEvent(
-        $ctx,
-        $clubId,
-        $name,
-        $startsAt,
-        $endsAt,
-        $locationName,
-        $locationAddr,
-        $googleMapsUrl,
-        $description,
-        $photoFileId
-    );
+    // For recurring rules the form sends back the specific occurrence dates the
+    // user confirmed (all checked by default; any unchecked are excluded).
+    // 'none' and 'custom' (not yet built) create a single event.
+    if (in_array($recurrenceRule, ['weekly', 'monthly_nth_weekday'], true)) {
+        $occurrenceDates = array_values(array_filter(
+            array_map('trim', (array)($_POST['occurrence_dates'] ?? []))
+        ));
 
-    Flash::set('success', 'Event created successfully.');
+        if (empty($occurrenceDates)) {
+            Flash::set('error', 'Please select at least one date for the recurring event.');
+            redirect($createUrl);
+        }
+
+        $eventId = EventManagement::createEventsFromDateList(
+            $ctx,
+            $clubId,
+            $name,
+            $startsAt,         // used to compute duration only
+            $endsAt,           // used to compute duration only
+            $locationName,
+            $locationAddr,
+            $googleMapsUrl,
+            $description,
+            $photoFileId,
+            $recurrenceRule,
+            $occurrenceDates
+        );
+
+        $seriesCount = count($occurrenceDates);
+        Flash::set('success', 'Recurring event series created — ' . $seriesCount
+            . ' ' . ($seriesCount === 1 ? 'date' : 'dates') . ' added.');
+    } else {
+        $eventId = EventManagement::createEvent(
+            $ctx,
+            $clubId,
+            $name,
+            $startsAt,
+            $endsAt,
+            $locationName,
+            $locationAddr,
+            $googleMapsUrl,
+            $description,
+            $photoFileId
+        );
+        Flash::set('success', 'Event created successfully.');
+    }
+
     redirect('/clubs/events/event.php?id=' . $eventId);
 
 } catch (\RuntimeException $e) {

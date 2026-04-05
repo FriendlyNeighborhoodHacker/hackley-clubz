@@ -173,18 +173,111 @@ ob_start();
   </div>
 
   <?php if ($canManage): ?>
-  <!-- Admin delete -->
+  <?php $isRecurring = !empty($event['recurrence_rule']) || !empty($event['recurrence_parent_id']); ?>
+  <!-- Admin delete — button opens modal below -->
   <div style="text-align:right; margin-top:8px;">
-    <form method="POST" action="/clubs/events/delete_eval.php" style="display:inline;">
-      <?= csrf_input() ?>
-      <input type="hidden" name="event_id" value="<?= $eventId ?>">
-      <button type="submit" class="btn btn-danger" style="font-size:13px;"
-              onclick="return confirm('Delete this event? This cannot be undone.')">
-        Delete Event
-      </button>
-    </form>
+    <button type="button" class="btn btn-danger" style="font-size:13px;"
+            onclick="openDeleteModal()">
+      Delete Event
+    </button>
   </div>
   <?php endif; ?>
+
+<!-- ── Delete Confirmation Modal ─────────────────────────────────────────── -->
+<?php if ($canManage): ?>
+<div id="delete-modal"
+     style="display:none; position:fixed; inset:0; z-index:1001;
+            background:rgba(0,0,0,.45); align-items:center; justify-content:center;">
+  <div style="background:var(--surface); border-radius:var(--radius); padding:28px 24px;
+              min-width:280px; max-width:380px; width:90%;
+              box-shadow:0 8px 32px rgba(0,0,0,.22);">
+
+    <?php if ($isRecurring): ?>
+      <h3 style="margin:0 0 8px; font-size:1rem; font-weight:700; color:var(--text-primary);">
+        Delete recurring event
+      </h3>
+      <p style="font-size:0.85rem; color:var(--text-secondary); margin:0 0 22px; line-height:1.5;">
+        This event is part of a recurring series.<br>
+        Would you like to delete just this occurrence, or every event in the series?
+      </p>
+      <!-- Hidden form — submit target set by JS buttons below -->
+      <form id="delete-form" method="POST" action="/clubs/events/delete_eval.php">
+        <?= csrf_input() ?>
+        <input type="hidden" name="event_id" value="<?= $eventId ?>">
+        <input type="hidden" id="delete-scope-input" name="delete_scope" value="single">
+      </form>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+        <button type="button" onclick="closeDeleteModal()"
+                class="btn btn-secondary" style="font-size:13px;">
+          Cancel
+        </button>
+        <button type="button"
+                onclick="submitDelete('single')"
+                class="btn btn-danger" style="font-size:13px;">
+          Just this event
+        </button>
+        <button type="button"
+                onclick="submitDelete('series')"
+                class="btn btn-danger"
+                style="font-size:13px; background:var(--error,#ef4444);
+                       border-color:var(--error,#ef4444);">
+          All events in series
+        </button>
+      </div>
+    <?php else: ?>
+      <h3 style="margin:0 0 8px; font-size:1rem; font-weight:700; color:var(--text-primary);">
+        Delete event
+      </h3>
+      <p style="font-size:0.85rem; color:var(--text-secondary); margin:0 0 22px; line-height:1.5;">
+        Are you sure you want to delete <strong><?= e($event['name']) ?></strong>?
+        This cannot be undone.
+      </p>
+      <form id="delete-form" method="POST" action="/clubs/events/delete_eval.php">
+        <?= csrf_input() ?>
+        <input type="hidden" name="event_id" value="<?= $eventId ?>">
+        <input type="hidden" name="delete_scope" value="single">
+      </form>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button type="button" onclick="closeDeleteModal()"
+                class="btn btn-secondary" style="font-size:13px;">
+          Cancel
+        </button>
+        <button type="button"
+                onclick="document.getElementById('delete-form').submit()"
+                class="btn btn-danger" style="font-size:13px;">
+          Delete Event
+        </button>
+      </div>
+    <?php endif; ?>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  var modal = document.getElementById('delete-modal');
+
+  window.openDeleteModal = function () {
+    modal.style.display = 'flex';
+  };
+
+  window.closeDeleteModal = function () {
+    modal.style.display = 'none';
+  };
+
+  window.submitDelete = function (scope) {
+    var scopeInput = document.getElementById('delete-scope-input');
+    if (scopeInput) scopeInput.value = scope;
+    document.getElementById('delete-form').submit();
+  };
+
+  // Close when clicking the backdrop
+  modal.addEventListener('click', function (e) {
+    if (e.target === this) closeDeleteModal();
+  });
+})();
+</script>
+<?php endif; ?>
 
 </div>
 

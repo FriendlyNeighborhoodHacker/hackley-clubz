@@ -142,14 +142,16 @@ class ApplicationUI
           <?php if (isset($item['onclick'])): ?>
             <button type="button"
                     class="admin-panel-link<?= !empty($item['active']) ? ' active' : '' ?>"
-                    style="width:100%; text-align:left; background:none; border:none; cursor:pointer;"
+                    style="width:100%; text-align:left; background:none; border:none; cursor:pointer;
+                           display:flex; align-items:center; gap:7px;"
                     onclick="<?= htmlspecialchars((string)$item['onclick'], ENT_COMPAT, 'UTF-8') ?>">
-              <?= $h((string)($item['label'] ?? '')) ?>
+              <?php if (!empty($item['icon_html'])): ?><span style="display:inline-flex;flex-shrink:0;"><?= $item['icon_html'] ?></span><?php endif; ?><?= $h((string)($item['label'] ?? '')) ?>
             </button>
           <?php else: ?>
             <a href="<?= $h((string)($item['href'] ?? '')) ?>"
-               class="admin-panel-link<?= !empty($item['active']) ? ' active' : '' ?>">
-              <?= $h((string)($item['label'] ?? '')) ?>
+               class="admin-panel-link<?= !empty($item['active']) ? ' active' : '' ?>"
+               style="display:flex; align-items:center; gap:7px;">
+              <?php if (!empty($item['icon_html'])): ?><span style="display:inline-flex;flex-shrink:0;"><?= $item['icon_html'] ?></span><?php endif; ?><?= $h((string)($item['label'] ?? '')) ?>
             </a>
           <?php endif; ?>
         <?php endforeach; ?>

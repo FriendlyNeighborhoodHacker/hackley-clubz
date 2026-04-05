@@ -54,6 +54,15 @@ ob_start();
   <form method="POST" action="/clubs/events/create_eval.php" novalidate>
     <?= csrf_input() ?>
     <input type="hidden" name="club_id" value="<?= $clubId ?>">
+    <?php
+      // JSON-encode previously selected occurrence dates so JS can restore them
+      // after a failed form submission (server redirects back here with $_POST preserved).
+      $prevOccurrenceDates = array_values(array_filter(
+          array_map('trim', (array)($_POST['occurrence_dates'] ?? []))
+      ));
+    ?>
+    <input type="hidden" id="prev_occurrence_dates"
+           value="<?= e(json_encode($prevOccurrenceDates)) ?>">
 
     <div class="card" style="background:var(--surface); border:1px solid var(--border);
                               border-radius:var(--radius); padding:24px; margin-bottom:20px;">
@@ -80,6 +89,48 @@ ob_start();
                  value="<?= e($_POST['ends_at'] ?? '') ?>">
         </div>
       </div>
+
+      <div class="form-group" style="margin-top:16px; margin-bottom:0;">
+        <label for="recurrence_rule">Repeat</label>
+        <select id="recurrence_rule" name="recurrence_rule"
+                data-saved="<?= e($_POST['recurrence_rule'] ?? 'none') ?>">
+          <option value="none">Does not repeat</option>
+          <option value="weekly"              id="rec-opt-weekly"  disabled>Weekly on …</option>
+          <option value="monthly_nth_weekday" id="rec-opt-monthly" disabled>Monthly on …</option>
+          <option value="custom"              id="rec-opt-custom"  disabled
+                  style="color:var(--text-muted);">Custom… (coming soon)</option>
+        </select>
+      </div>
+
+      <!-- Occurrence list — shown when a repeat rule is selected ─────────── -->
+      <div id="rec-occurrences-section"
+           style="display:none; margin-top:20px; padding-top:18px;
+                  border-top:1px solid var(--border-light);">
+        <div style="display:flex; align-items:center; justify-content:space-between;
+                    margin-bottom:6px;">
+          <span style="font-size:0.82rem; font-weight:600; color:var(--text-secondary);">
+            Occurrences
+          </span>
+          <span style="font-size:0.78rem; display:flex; gap:14px;">
+            <a href="#" id="rec-check-all"
+               style="color:var(--accent-blue); text-decoration:none;">Select all</a>
+            <a href="#" id="rec-uncheck-all"
+               style="color:var(--accent-blue); text-decoration:none;">Deselect all</a>
+          </span>
+        </div>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin:0 0 10px;">
+          All dates are selected. Uncheck any you'd like to skip.
+        </p>
+        <div id="rec-occurrences-list"
+             style="max-height:280px; overflow-y:auto;
+                    border:1px solid var(--border); border-radius:var(--radius-sm);">
+          <!-- populated by JS -->
+        </div>
+        <div id="rec-occurrences-count"
+             style="font-size:0.78rem; color:var(--text-muted); margin-top:6px;
+                    text-align:right;"></div>
+      </div>
+
     </div>
 
     <div class="card" style="background:var(--surface); border:1px solid var(--border);
@@ -253,6 +304,215 @@ ob_start();
       if (img) document.getElementById('evImgDataHidden').value = canvas.toDataURL('image/jpeg', 0.95);
     });
   }
+})();
+</script>
+
+<script>
+// ── Recurrence dropdown + occurrence date list ────────────────────────────
+(function () {
+  const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const NTH_NAMES = ['first','second','third','fourth','fifth'];
+  const MON_ABBR  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const DOW_ABBR  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  const startsEl       = document.getElementById('starts_at');
+  const recSelect      = document.getElementById('recurrence_rule');
+  const weeklyOpt      = document.getElementById('rec-opt-weekly');
+  const monthlyOpt     = document.getElementById('rec-opt-monthly');
+  const customOpt      = document.getElementById('rec-opt-custom');
+  const occSection     = document.getElementById('rec-occurrences-section');
+  const occList        = document.getElementById('rec-occurrences-list');
+  const occCount       = document.getElementById('rec-occurrences-count');
+  const checkAllBtn    = document.getElementById('rec-check-all');
+  const uncheckAllBtn  = document.getElementById('rec-uncheck-all');
+  const submitBtn      = document.querySelector('button[type="submit"].btn.btn-primary');
+  const prevDatesInput = document.getElementById('prev_occurrence_dates');
+
+  // ── Date helpers ──────────────────────────────────────────────────────────
+
+  /** Format Date → 'YYYY-MM-DD HH:MM:SS' (MySQL datetime, local time). */
+  function toMysql(dt) {
+    const p = n => String(n).padStart(2, '0');
+    return dt.getFullYear() + '-' + p(dt.getMonth()+1) + '-' + p(dt.getDate())
+         + ' ' + p(dt.getHours()) + ':' + p(dt.getMinutes()) + ':00';
+  }
+
+  /** Format Date → human-readable like 'Sat, Apr 5, 2025 at 3:00 PM'. */
+  function formatDate(dt) {
+    const h  = dt.getHours() % 12 || 12;
+    const m  = dt.getMinutes() > 0 ? ':' + String(dt.getMinutes()).padStart(2,'0') : '';
+    const ap = dt.getHours() >= 12 ? 'PM' : 'AM';
+    return DOW_ABBR[dt.getDay()] + ', ' + MON_ABBR[dt.getMonth()]
+         + ' ' + dt.getDate() + ', ' + dt.getFullYear()
+         + ' at ' + h + m + '\u202f' + ap;
+  }
+
+  /** Compute the Nth occurrence of targetDow in the month after 'current'. */
+  function nextNthWeekday(current, targetDow, nth) {
+    const next       = new Date(current.getFullYear(), current.getMonth() + 1, 1,
+                                current.getHours(), current.getMinutes(), 0);
+    const firstDow   = next.getDay();
+    const toFirst    = (targetDow - firstDow + 7) % 7;
+    let   day        = 1 + toFirst + (nth - 1) * 7;
+    const daysInMon  = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+    if (day > daysInMon) day -= 7;   // fall back if month is too short
+    return new Date(next.getFullYear(), next.getMonth(), day,
+                    current.getHours(), current.getMinutes(), 0);
+  }
+
+  /** Generate all occurrence Date objects for a given rule from startsAtVal. */
+  function generateDates(startsAtVal, rule) {
+    const start = new Date(startsAtVal);
+    if (isNaN(start.getTime())) return [];
+
+    const cutoff   = new Date(start.getFullYear() + 1, start.getMonth(),
+                               start.getDate(), start.getHours(), start.getMinutes(), 0);
+    const maxCount = rule === 'weekly' ? 52 : 12;
+    const targetDow = start.getDay();
+    const nth       = Math.ceil(start.getDate() / 7);
+
+    const dates = [new Date(start)];
+    let current = new Date(start);
+
+    for (let i = 0; i < maxCount; i++) {
+      if (rule === 'weekly') {
+        current = new Date(current.getTime() + 7 * 24 * 60 * 60 * 1000);
+      } else {
+        current = nextNthWeekday(current, targetDow, nth);
+      }
+      if (current > cutoff) break;
+      dates.push(new Date(current));
+    }
+    return dates;
+  }
+
+  // ── Render checkboxes ─────────────────────────────────────────────────────
+
+  function renderOccurrences(dates) {
+    occList.innerHTML = '';
+
+    // Recover previously-checked dates for form repopulation after a failed submit.
+    let prevSelected = [];
+    try {
+      const raw = prevDatesInput ? JSON.parse(prevDatesInput.value || '[]') : [];
+      prevSelected = Array.isArray(raw) ? raw : [];
+    } catch (e) {}
+    const hasHistory = prevSelected.length > 0;
+
+    dates.forEach(function (dt, idx) {
+      const val     = toMysql(dt);
+      const checked = !hasHistory || prevSelected.includes(val);
+
+      const row = document.createElement('label');
+      row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:9px 14px;'
+        + 'cursor:pointer; font-size:0.875rem; color:var(--text-primary);'
+        + 'border-bottom:1px solid var(--border-light); margin:0; font-weight:400;'
+        + (idx === dates.length - 1 ? 'border-bottom:none;' : '');
+
+      const cb = document.createElement('input');
+      cb.type    = 'checkbox';
+      cb.name    = 'occurrence_dates[]';
+      cb.value   = val;
+      cb.checked = checked;
+      cb.style.cssText = 'width:auto; padding:0; flex-shrink:0;';
+      cb.addEventListener('change', updateCount);
+
+      const span = document.createElement('span');
+      span.textContent = formatDate(dt);
+
+      row.appendChild(cb);
+      row.appendChild(span);
+      occList.appendChild(row);
+    });
+
+    updateCount();
+  }
+
+  function updateCount() {
+    const total   = occList.querySelectorAll('input[type="checkbox"]').length;
+    const checked = occList.querySelectorAll('input[type="checkbox"]:checked').length;
+    if (occCount) {
+      occCount.textContent = checked + ' of ' + total
+        + ' date' + (total !== 1 ? 's' : '') + ' selected';
+    }
+  }
+
+  // ── Check / Uncheck all ───────────────────────────────────────────────────
+
+  if (checkAllBtn) {
+    checkAllBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      occList.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = true; });
+      updateCount();
+    });
+  }
+  if (uncheckAllBtn) {
+    uncheckAllBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      occList.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+      updateCount();
+    });
+  }
+
+  // ── Main update ───────────────────────────────────────────────────────────
+
+  function updateAll() {
+    const startsVal  = startsEl.value;
+    const rule       = recSelect.value;
+    const isRecurring = (rule === 'weekly' || rule === 'monthly_nth_weekday');
+
+    // Update dropdown option labels whenever a start date is present.
+    if (startsVal) {
+      const dt = new Date(startsVal);
+      if (!isNaN(dt.getTime())) {
+        const dayName  = DAY_NAMES[dt.getDay()];
+        const nthIndex = Math.min(Math.ceil(dt.getDate() / 7) - 1, 4);
+        const nthName  = NTH_NAMES[nthIndex];
+
+        weeklyOpt.textContent  = 'Weekly on ' + dayName;
+        weeklyOpt.disabled     = false;
+        monthlyOpt.textContent = 'Monthly on ' + nthName + ' ' + dayName;
+        monthlyOpt.disabled    = false;
+        customOpt.disabled     = false;
+      }
+    }
+
+    // Show / hide occurrence list.
+    occSection.style.display = (isRecurring && startsVal) ? 'block' : 'none';
+    if (isRecurring && startsVal) {
+      renderOccurrences(generateDates(startsVal, rule));
+    }
+
+    // Update submit button label.
+    if (submitBtn) submitBtn.textContent = isRecurring ? 'Create Events' : 'Create Event';
+  }
+
+  // ── Client-side validation before submit ──────────────────────────────────
+
+  const form = recSelect.closest('form');
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      const rule = recSelect.value;
+      if (rule === 'weekly' || rule === 'monthly_nth_weekday') {
+        const checked = occList.querySelectorAll('input[type="checkbox"]:checked').length;
+        if (checked === 0) {
+          e.preventDefault();
+          alert('Please select at least one date for the recurring event.');
+        }
+      }
+    });
+  }
+
+  // ── Init: restore saved rule on form repopulation ─────────────────────────
+
+  const savedRule = recSelect.getAttribute('data-saved');
+  if (savedRule && savedRule !== 'none') {
+    recSelect.value = savedRule;
+  }
+
+  startsEl.addEventListener('change', updateAll);
+  recSelect.addEventListener('change', updateAll);
+  if (startsEl.value) updateAll();
 })();
 </script>
 

@@ -17,6 +17,12 @@ if ($eventId <= 0) {
     redirect('/clubs/browse.php');
 }
 
+// 'single' deletes only this occurrence; 'series' deletes the whole recurring series.
+$deleteScope = trim((string)($_POST['delete_scope'] ?? 'single'));
+if (!in_array($deleteScope, ['single', 'series'], true)) {
+    $deleteScope = 'single';
+}
+
 try {
     $ctx   = UserContext::getLoggedInUserContext();
     $event = EventManagement::getEventById($eventId);
@@ -26,9 +32,15 @@ try {
     }
 
     $clubId = (int)$event['club_id'];
-    EventManagement::deleteEvent($ctx, $eventId);
 
-    Flash::set('success', 'Event deleted.');
+    if ($deleteScope === 'series') {
+        EventManagement::deleteEventSeries($ctx, $eventId);
+        Flash::set('success', 'All events in the series have been deleted.');
+    } else {
+        EventManagement::deleteEvent($ctx, $eventId);
+        Flash::set('success', 'Event deleted.');
+    }
+
     redirect('/clubs/events/index.php?id=' . $clubId);
 
 } catch (\RuntimeException $e) {

@@ -211,20 +211,20 @@ $_navBtnInitial  = $_activeClubRow ? strtoupper(substr($_activeClubRow['name'], 
       </button>
     </div>
     <nav class="admin-panel-nav">
-      <a href="/admin/clubs/index.php"  class="admin-panel-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <a href="/admin/clubs/index.php"  class="admin-panel-link" style="display:flex;align-items:center;gap:7px;">
+        <span style="display:inline-flex;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
         Clubs
       </a>
-      <a href="/admin/users/index.php"  class="admin-panel-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <a href="/admin/users/index.php"  class="admin-panel-link" style="display:flex;align-items:center;gap:7px;">
+        <span style="display:inline-flex;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#038BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
         Users
       </a>
-      <a href="/admin/settings.php"     class="admin-panel-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+      <a href="/admin/settings.php"     class="admin-panel-link" style="display:flex;align-items:center;gap:7px;">
+        <span style="display:inline-flex;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></span>
         Settings
       </a>
-      <a href="/admin/reports.php"      class="admin-panel-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <a href="/admin/reports.php"      class="admin-panel-link" style="display:flex;align-items:center;gap:7px;">
+        <span style="display:inline-flex;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
         Reports
       </a>
     </nav>
@@ -276,27 +276,35 @@ $_navBtnInitial  = $_activeClubRow ? strtoupper(substr($_activeClubRow['name'], 
 
       <nav class="admin-panel-nav">
         <a href="/clubs/view.php?id=<?= $scCid ?>"
-           class="admin-panel-link<?= ($scIsActive && $activeSidebar === 'club-info') ? ' active' : '' ?>">
+           class="admin-panel-link<?= ($scIsActive && $activeSidebar === 'club-info') ? ' active' : '' ?>"
+           style="display:flex;align-items:center;gap:7px;">
+          <span style="display:inline-flex;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#038BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
           Club Info
         </a>
-        <a href="/clubs/events/index.php?id=<?= $scCid ?>"
-           class="admin-panel-link<?= ($scIsActive && $activeSidebar === 'club-events') ? ' active' : '' ?>">
-          Events
-        </a>
         <a href="/clubs/members.php?id=<?= $scCid ?>"
-           class="admin-panel-link<?= ($scIsActive && $activeSidebar === 'club-members') ? ' active' : '' ?>">
+           class="admin-panel-link<?= ($scIsActive && $activeSidebar === 'club-members') ? ' active' : '' ?>"
+           style="display:flex;align-items:center;gap:7px;">
+          <span style="display:inline-flex;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
           Members
+        </a>
+        <a href="/clubs/events/index.php?id=<?= $scCid ?>"
+           class="admin-panel-link<?= ($scIsActive && $activeSidebar === 'club-events') ? ' active' : '' ?>"
+           style="display:flex;align-items:center;gap:7px;">
+          <span style="display:inline-flex;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6B47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+          Events
         </a>
         <?php if ($scIsClubAdmin): ?>
           <a href="/clubs/settings.php?id=<?= $scCid ?>"
-             class="admin-panel-link<?= ($scIsActive && $activeSidebar === 'club-settings') ? ' active' : '' ?>">
+             class="admin-panel-link<?= ($scIsActive && $activeSidebar === 'club-settings') ? ' active' : '' ?>"
+             style="display:flex;align-items:center;gap:7px;">
+            <span style="display:inline-flex;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></span>
             Settings
           </a>
         <?php endif; ?>
         <span class="admin-panel-link"
-              style="color:var(--text-muted); cursor:default; font-style:italic;">
-          Chat Threads
-          <small style="font-size:10px; display:block; margin-top:1px;">coming soon</small>
+              style="display:flex;align-items:flex-start;gap:7px;color:var(--text-muted); cursor:default; font-style:italic;">
+          <span style="display:inline-flex;flex-shrink:0;margin-top:1px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#06B6D4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+          <span>Chat Threads<small style="font-size:10px; display:block; margin-top:1px;">coming soon</small></span>
         </span>
       </nav>
 
@@ -308,7 +316,12 @@ $_navBtnInitial  = $_activeClubRow ? strtoupper(substr($_activeClubRow['name'], 
     <?= Flash::render() ?>
     <?php if ($announcement !== ''): ?>
       <div class="announcement-banner" role="alert">
-        <span class="announcement-icon" aria-hidden="true">📢</span>
+        <span class="announcement-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 3L2 10l8 3 3 8 9-18z"/>
+          </svg>
+        </span>
         <span class="announcement-text"><?= e($announcement) ?></span>
       </div>
     <?php endif; ?>

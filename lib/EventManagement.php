@@ -94,6 +94,10 @@ final class EventManagement {
     /**
      * Create a new event and return its ID.
      *
+     * $recurrenceRule should be 'weekly' | 'monthly_nth_weekday' | 'custom', or omitted/null
+     * for a non-repeating event.  $recurrenceParentId is set internally by
+     * createRecurringEvents() for child occurrences; callers should leave it null.
+     *
      * @throws \RuntimeException if the actor lacks permission or required fields are missing
      */
     public static function createEvent(
@@ -106,7 +110,9 @@ final class EventManagement {
         string      $locationAddress,
         string      $googleMapsUrl,
         string      $description,
-        ?int        $photoFileId
+        ?int        $photoFileId,
+        string      $recurrenceRule     = 'none',
+        ?int        $recurrenceParentId = null
     ): int {
         if (!$ctx->admin && !ClubManagement::isUserClubAdmin($ctx->id, $clubId)) {
             throw new \RuntimeException('You must be a club admin to create events.');
@@ -120,32 +126,356 @@ final class EventManagement {
             throw new \RuntimeException('Start date/time is required.');
         }
 
-        $st = pdo()->prepare(
-            'INSERT INTO events
-               (club_id, name, starts_at, ends_at, location_name, location_address,
-                google_maps_url, description, photo_public_file_id, created_by_user_id, created_at)
-             VALUES
-               (:cid, :name, :starts, :ends, :loc_name, :loc_addr,
-                :maps, :desc, :photo, :creator, NOW())'
-        );
+        $ruleVal   = in_array($recurrenceRule, ['weekly', 'monthly_nth_weekday', 'custom'], true)
+                     ? $recurrenceRule : null;
         $endsVal   = $endsAt !== '' ? $endsAt : null;
         $mapsVal   = trim($googleMapsUrl) !== '' ? trim($googleMapsUrl) : null;
 
-        $st->bindValue(':cid',     $clubId,                  \PDO::PARAM_INT);
-        $st->bindValue(':name',    $name,                    \PDO::PARAM_STR);
-        $st->bindValue(':starts',  $startsAt,                \PDO::PARAM_STR);
-        $st->bindValue(':ends',    $endsVal,   $endsVal   ? \PDO::PARAM_STR : \PDO::PARAM_NULL);
-        $st->bindValue(':loc_name',trim($locationName),      \PDO::PARAM_STR);
-        $st->bindValue(':loc_addr',trim($locationAddress),   \PDO::PARAM_STR);
-        $st->bindValue(':maps',    $mapsVal,   $mapsVal   ? \PDO::PARAM_STR : \PDO::PARAM_NULL);
-        $st->bindValue(':desc',    trim($description),       \PDO::PARAM_STR);
-        $st->bindValue(':photo',   $photoFileId, $photoFileId ? \PDO::PARAM_INT : \PDO::PARAM_NULL);
-        $st->bindValue(':creator', $ctx->id,                 \PDO::PARAM_INT);
+        $st = pdo()->prepare(
+            'INSERT INTO events
+               (club_id, name, starts_at, ends_at, location_name, location_address,
+                google_maps_url, description, photo_public_file_id, created_by_user_id,
+                recurrence_rule, recurrence_parent_id, created_at)
+             VALUES
+               (:cid, :name, :starts, :ends, :loc_name, :loc_addr,
+                :maps, :desc, :photo, :creator,
+                :rec_rule, :rec_parent, NOW())'
+        );
+        $st->bindValue(':cid',       $clubId,                 \PDO::PARAM_INT);
+        $st->bindValue(':name',      $name,                   \PDO::PARAM_STR);
+        $st->bindValue(':starts',    $startsAt,               \PDO::PARAM_STR);
+        $st->bindValue(':ends',      $endsVal,    $endsVal    ? \PDO::PARAM_STR  : \PDO::PARAM_NULL);
+        $st->bindValue(':loc_name',  trim($locationName),     \PDO::PARAM_STR);
+        $st->bindValue(':loc_addr',  trim($locationAddress),  \PDO::PARAM_STR);
+        $st->bindValue(':maps',      $mapsVal,    $mapsVal    ? \PDO::PARAM_STR  : \PDO::PARAM_NULL);
+        $st->bindValue(':desc',      trim($description),      \PDO::PARAM_STR);
+        $st->bindValue(':photo',     $photoFileId, $photoFileId ? \PDO::PARAM_INT : \PDO::PARAM_NULL);
+        $st->bindValue(':creator',   $ctx->id,                \PDO::PARAM_INT);
+        $st->bindValue(':rec_rule',  $ruleVal,    $ruleVal    ? \PDO::PARAM_STR  : \PDO::PARAM_NULL);
+        $st->bindValue(':rec_parent', $recurrenceParentId,
+                       $recurrenceParentId !== null ? \PDO::PARAM_INT : \PDO::PARAM_NULL);
         $st->execute();
 
         $eventId = (int)pdo()->lastInsertId();
         ActivityLog::log($ctx, 'event.create', ['event_id' => $eventId, 'club_id' => $clubId, 'name' => $name]);
         return $eventId;
+    }
+
+    /**
+     * Create a recurring event series.
+     *
+     * Creates the first (parent) event via createEvent(), then generates all
+     * child occurrences up to 1 year from the start date (max 52 weekly or
+     * 12 monthly occurrences) and inserts them as child rows linked back to
+     * the parent via recurrence_parent_id.
+     *
+     * Supported rules:
+     *   'weekly'              — every 7 days.
+     *   'monthly_nth_weekday' — same Nth weekday of each subsequent month
+     *                           (e.g. "third Saturday").  If a month is too
+     *                           short for the 5th occurrence, falls back to
+     *                           the 4th.
+     *
+     * Returns the parent event ID.
+     *
+     * @throws \RuntimeException on invalid rule or permission failure
+     */
+    public static function createRecurringEvents(
+        UserContext $ctx,
+        int         $clubId,
+        string      $name,
+        string      $startsAt,
+        string      $endsAt,
+        string      $locationName,
+        string      $locationAddress,
+        string      $googleMapsUrl,
+        string      $description,
+        ?int        $photoFileId,
+        string      $recurrenceRule
+    ): int {
+        if (!in_array($recurrenceRule, ['weekly', 'monthly_nth_weekday'], true)) {
+            throw new \RuntimeException('Invalid recurrence rule: ' . $recurrenceRule);
+        }
+
+        // Create the first (parent) event — permission check happens inside createEvent().
+        $parentId = self::createEvent(
+            $ctx, $clubId, $name, $startsAt, $endsAt,
+            $locationName, $locationAddress, $googleMapsUrl,
+            $description, $photoFileId, $recurrenceRule, null
+        );
+
+        // Preserve event duration across recurrences.
+        $startDt     = new \DateTime($startsAt);
+        $durationSec = null;
+        if ($endsAt !== '') {
+            $endDt       = new \DateTime($endsAt);
+            $durationSec = $endDt->getTimestamp() - $startDt->getTimestamp();
+        }
+
+        $cutoff   = (clone $startDt)->modify('+1 year');
+        $maxCount = ($recurrenceRule === 'weekly') ? 52 : 12;
+
+        $current  = clone $startDt;
+        $count    = 0;
+
+        while ($count < $maxCount) {
+            if ($recurrenceRule === 'weekly') {
+                $current->modify('+7 days');
+            } else {
+                $current = self::nextNthWeekdayOfMonth($current, $startDt);
+            }
+
+            if ($current > $cutoff) {
+                break;
+            }
+
+            $childStartsAt = $current->format('Y-m-d H:i:s');
+            $childEndsAt   = '';
+            if ($durationSec !== null) {
+                $childEndsAt = (clone $current)
+                    ->modify('+' . $durationSec . ' seconds')
+                    ->format('Y-m-d H:i:s');
+            }
+
+            self::insertChildEventRow(
+                $ctx, $clubId, $name, $childStartsAt, $childEndsAt,
+                $locationName, $locationAddress, $googleMapsUrl,
+                $description, $photoFileId, $recurrenceRule, $parentId
+            );
+            $count++;
+        }
+
+        ActivityLog::log($ctx, 'event.create_recurring', [
+            'parent_event_id' => $parentId,
+            'club_id'         => $clubId,
+            'name'            => $name,
+            'rule'            => $recurrenceRule,
+            'occurrences'     => $count + 1, // +1 for the parent
+        ]);
+
+        return $parentId;
+    }
+
+    /**
+     * Create events for an explicit list of start-datetimes chosen by the user.
+     *
+     * The caller provides the exact occurrence dates (already confirmed by the
+     * user in the UI); this method does not generate any dates itself.  The
+     * duration of each occurrence is preserved from the original start/end pair.
+     *
+     * The first date in $occurrenceDates becomes the parent event; any
+     * additional dates become child rows with recurrence_parent_id pointing
+     * back to the parent.  If only one date is in the list the event is
+     * created as a standalone (no recurrence columns set).
+     *
+     * @param UserContext $ctx
+     * @param int         $clubId
+     * @param string      $name
+     * @param string      $baseStartsAt   Template start datetime — used to compute duration.
+     * @param string      $baseEndsAt     Template end datetime   — used to compute duration.
+     * @param string      $locationName
+     * @param string      $locationAddress
+     * @param string      $googleMapsUrl
+     * @param string      $description
+     * @param ?int        $photoFileId
+     * @param string      $recurrenceRule  'weekly' | 'monthly_nth_weekday' | 'custom'
+     * @param string[]    $occurrenceDates Array of 'YYYY-MM-DD HH:MM:SS' start datetimes
+     *                                     (user-selected; sorted ascending before use).
+     * @return int  Parent event ID.
+     * @throws \RuntimeException on invalid input or permission failure.
+     */
+    public static function createEventsFromDateList(
+        UserContext $ctx,
+        int         $clubId,
+        string      $name,
+        string      $baseStartsAt,
+        string      $baseEndsAt,
+        string      $locationName,
+        string      $locationAddress,
+        string      $googleMapsUrl,
+        string      $description,
+        ?int        $photoFileId,
+        string      $recurrenceRule,
+        array       $occurrenceDates
+    ): int {
+        if (!in_array($recurrenceRule, ['weekly', 'monthly_nth_weekday', 'custom'], true)) {
+            throw new \RuntimeException('Invalid recurrence rule.');
+        }
+
+        // Sanitize and sort the occurrence dates.
+        $dates = [];
+        foreach ($occurrenceDates as $rawDate) {
+            $clean = trim((string)$rawDate);
+            if ($clean === '') continue;
+            try {
+                $dates[] = (new \DateTime($clean))->format('Y-m-d H:i:s');
+            } catch (\Exception $e) {
+                // skip unparseable entries
+            }
+        }
+
+        if (empty($dates)) {
+            throw new \RuntimeException('Please select at least one occurrence date.');
+        }
+
+        sort($dates);
+        $isRecurringSeries = count($dates) > 1;
+
+        // Compute event duration from the base start/end times so every child
+        // occurrence has the same length.
+        $durationSec = null;
+        if ($baseEndsAt !== '' && $baseStartsAt !== '') {
+            try {
+                $durationSec = (new \DateTime($baseEndsAt))->getTimestamp()
+                             - (new \DateTime($baseStartsAt))->getTimestamp();
+                if ($durationSec <= 0) $durationSec = null;
+            } catch (\Exception $e) {
+                $durationSec = null;
+            }
+        }
+
+        // Helper: compute ends_at for a given starts_at.
+        $endFor = function (string $startsAt) use ($durationSec): string {
+            if ($durationSec === null) return '';
+            try {
+                return (new \DateTime($startsAt))
+                    ->modify('+' . $durationSec . ' seconds')
+                    ->format('Y-m-d H:i:s');
+            } catch (\Exception $e) {
+                return '';
+            }
+        };
+
+        // Create the first (parent) event.  Permission check is inside createEvent().
+        $rule     = $isRecurringSeries ? $recurrenceRule : 'none';
+        $parentId = self::createEvent(
+            $ctx, $clubId, $name,
+            $dates[0], $endFor($dates[0]),
+            $locationName, $locationAddress, $googleMapsUrl, $description, $photoFileId,
+            $rule, null
+        );
+
+        if (!$isRecurringSeries) {
+            return $parentId;
+        }
+
+        // Create child occurrences for every date after the first.
+        $childCount = 0;
+        for ($i = 1; $i < count($dates); $i++) {
+            self::insertChildEventRow(
+                $ctx, $clubId, $name,
+                $dates[$i], $endFor($dates[$i]),
+                $locationName, $locationAddress, $googleMapsUrl, $description, $photoFileId,
+                $recurrenceRule, $parentId
+            );
+            $childCount++;
+        }
+
+        ActivityLog::log($ctx, 'event.create_recurring', [
+            'parent_event_id' => $parentId,
+            'club_id'         => $clubId,
+            'name'            => $name,
+            'rule'            => $recurrenceRule,
+            'occurrences'     => count($dates),
+        ]);
+
+        return $parentId;
+    }
+
+    // -------------------------------------------------------------------------
+    // Private recurrence helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Insert a child recurrence event row directly (no permission check, no
+     * individual activity log entry — the batch log in createRecurringEvents()
+     * covers all children).
+     */
+    private static function insertChildEventRow(
+        UserContext $ctx,
+        int         $clubId,
+        string      $name,
+        string      $startsAt,
+        string      $endsAt,
+        string      $locationName,
+        string      $locationAddress,
+        string      $googleMapsUrl,
+        string      $description,
+        ?int        $photoFileId,
+        string      $recurrenceRule,
+        int         $recurrenceParentId
+    ): int {
+        $endsVal = $endsAt !== '' ? $endsAt : null;
+        $mapsVal = trim($googleMapsUrl) !== '' ? trim($googleMapsUrl) : null;
+
+        $st = pdo()->prepare(
+            'INSERT INTO events
+               (club_id, name, starts_at, ends_at, location_name, location_address,
+                google_maps_url, description, photo_public_file_id, created_by_user_id,
+                recurrence_rule, recurrence_parent_id, created_at)
+             VALUES
+               (:cid, :name, :starts, :ends, :loc_name, :loc_addr,
+                :maps, :desc, :photo, :creator,
+                :rec_rule, :rec_parent, NOW())'
+        );
+        $st->bindValue(':cid',        $clubId,               \PDO::PARAM_INT);
+        $st->bindValue(':name',       $name,                 \PDO::PARAM_STR);
+        $st->bindValue(':starts',     $startsAt,             \PDO::PARAM_STR);
+        $st->bindValue(':ends',       $endsVal,    $endsVal  ? \PDO::PARAM_STR  : \PDO::PARAM_NULL);
+        $st->bindValue(':loc_name',   trim($locationName),   \PDO::PARAM_STR);
+        $st->bindValue(':loc_addr',   trim($locationAddress),\PDO::PARAM_STR);
+        $st->bindValue(':maps',       $mapsVal,    $mapsVal  ? \PDO::PARAM_STR  : \PDO::PARAM_NULL);
+        $st->bindValue(':desc',       trim($description),    \PDO::PARAM_STR);
+        $st->bindValue(':photo',      $photoFileId, $photoFileId ? \PDO::PARAM_INT : \PDO::PARAM_NULL);
+        $st->bindValue(':creator',    $ctx->id,              \PDO::PARAM_INT);
+        $st->bindValue(':rec_rule',   $recurrenceRule,       \PDO::PARAM_STR);
+        $st->bindValue(':rec_parent', $recurrenceParentId,   \PDO::PARAM_INT);
+        $st->execute();
+
+        return (int)pdo()->lastInsertId();
+    }
+
+    /**
+     * Compute the same Nth weekday of the month AFTER $current.
+     *
+     * The Nth weekday and the target day-of-week are derived from $original
+     * (the series start date).  For example, if the series starts on the third
+     * Saturday of April, this returns the third Saturday of May (given $current
+     * somewhere in April), then the third Saturday of June, etc.
+     *
+     * Edge case: if the target month does not have a 5th occurrence of that
+     * weekday, the 4th occurrence is used instead.
+     *
+     * @param \DateTime $current  The date of the most recently generated occurrence.
+     * @param \DateTime $original The series start date (used to derive Nth + DOW).
+     * @return \DateTime          The next occurrence, at the same time of day as $current.
+     */
+    private static function nextNthWeekdayOfMonth(\DateTime $current, \DateTime $original): \DateTime
+    {
+        $targetDow  = (int)$original->format('w'); // 0 = Sunday … 6 = Saturday
+        $dayOfMonth = (int)$original->format('j'); // 1 – 31
+        $nth        = (int)ceil($dayOfMonth / 7);  // 1 – 5 (which occurrence)
+
+        // Move to the 1st of the month after $current
+        $firstOfNext = (clone $current)->modify('first day of next month');
+        $year  = (int)$firstOfNext->format('Y');
+        $month = (int)$firstOfNext->format('m');
+
+        // Find the first occurrence of $targetDow in that month
+        $firstOfMonth    = new \DateTime(sprintf('%04d-%02d-01 %s', $year, $month, $current->format('H:i:s')));
+        $firstDow        = (int)$firstOfMonth->format('w');
+        $daysToFirstTarget = ($targetDow - $firstDow + 7) % 7;
+
+        // Advance by (nth - 1) full weeks
+        $targetDay = 1 + $daysToFirstTarget + ($nth - 1) * 7;
+
+        // If this month doesn't have that many days, fall back one week (4th instead of 5th)
+        $daysInMonth = (int)(new \DateTime(sprintf('%04d-%02d-01', $year, $month)))->format('t');
+        if ($targetDay > $daysInMonth) {
+            $targetDay -= 7;
+        }
+
+        return new \DateTime(sprintf('%04d-%02d-%02d %s', $year, $month, $targetDay, $current->format('H:i:s')));
     }
 
     /**
@@ -229,7 +559,11 @@ final class EventManagement {
     }
 
     /**
-     * Permanently delete an event.
+     * Permanently delete a single event occurrence.
+     *
+     * If the event being deleted is the parent of a recurring series, the
+     * earliest remaining child is promoted to become the new parent so that
+     * the rest of the series survives (avoids ON DELETE CASCADE wiping them out).
      *
      * @throws \RuntimeException if the actor lacks permission or the event is not found
      */
@@ -239,18 +573,113 @@ final class EventManagement {
             throw new \RuntimeException('Event not found.');
         }
 
-        if (!$ctx->admin && !ClubManagement::isUserClubAdmin($ctx->id, (int)$event['club_id'])) {
+        $clubId = (int)$event['club_id'];
+        if (!$ctx->admin && !ClubManagement::isUserClubAdmin($ctx->id, $clubId)) {
             throw new \RuntimeException('You must be a club admin to delete events.');
         }
 
+        // If this event is a series parent (has children), promote the earliest
+        // child to be the new parent before deleting — otherwise ON DELETE CASCADE
+        // would wipe out the entire series.
+        $isParent = empty($event['recurrence_parent_id'])
+                    && !empty($event['recurrence_rule']);
+
+        if ($isParent) {
+            // Find all children ordered by start date so we promote the earliest.
+            $childSt = pdo()->prepare(
+                'SELECT id FROM events
+                  WHERE recurrence_parent_id = :pid
+                  ORDER BY starts_at ASC'
+            );
+            $childSt->bindValue(':pid', $eventId, \PDO::PARAM_INT);
+            $childSt->execute();
+            $children = $childSt->fetchAll();
+
+            if (!empty($children)) {
+                $newParentId          = (int)$children[0]['id'];
+                $remainingChildrenIds = array_slice(array_column($children, 'id'), 1);
+
+                // Promote first child: clear its recurrence_parent_id.
+                $promoteSt = pdo()->prepare(
+                    'UPDATE events SET recurrence_parent_id = NULL WHERE id = :id'
+                );
+                $promoteSt->bindValue(':id', $newParentId, \PDO::PARAM_INT);
+                $promoteSt->execute();
+
+                // Re-point any remaining children to the new parent.
+                if (!empty($remainingChildrenIds)) {
+                    $placeholders = implode(',', array_fill(0, count($remainingChildrenIds), '?'));
+                    $reparentSt   = pdo()->prepare(
+                        "UPDATE events SET recurrence_parent_id = ?
+                          WHERE id IN ($placeholders)"
+                    );
+                    $reparentSt->execute(array_merge([$newParentId], $remainingChildrenIds));
+                }
+            }
+        }
+
+        // Now safe to delete — no children point to this row any more.
         $st = pdo()->prepare('DELETE FROM events WHERE id = :id');
         $st->bindValue(':id', $eventId, \PDO::PARAM_INT);
         $st->execute();
 
         ActivityLog::log($ctx, 'event.delete', [
             'event_id' => $eventId,
-            'club_id'  => (int)$event['club_id'],
+            'club_id'  => $clubId,
             'name'     => $event['name'] ?? '',
+        ]);
+    }
+
+    /**
+     * Permanently delete an entire recurring event series.
+     *
+     * Works whether $eventId is the parent or any child in the series:
+     *   - If $eventId has a recurrence_parent_id, that parent becomes the root.
+     *   - If $eventId is already the root parent, it is used directly.
+     * Deleting the root cascades to all children via the FK constraint.
+     *
+     * @throws \RuntimeException if the actor lacks permission or the event is not found
+     */
+    public static function deleteEventSeries(UserContext $ctx, int $eventId): void {
+        $event = self::getEventById($eventId);
+        if (!$event) {
+            throw new \RuntimeException('Event not found.');
+        }
+
+        $clubId = (int)$event['club_id'];
+        if (!$ctx->admin && !ClubManagement::isUserClubAdmin($ctx->id, $clubId)) {
+            throw new \RuntimeException('You must be a club admin to delete events.');
+        }
+
+        // Resolve the root parent ID.
+        $parentId = $event['recurrence_parent_id']
+            ? (int)$event['recurrence_parent_id']
+            : $eventId;
+
+        // Count how many events will be removed for the activity log.
+        $countSt = pdo()->prepare(
+            'SELECT COUNT(*) FROM events
+              WHERE id = :pid OR recurrence_parent_id = :pid2'
+        );
+        $countSt->bindValue(':pid',  $parentId, \PDO::PARAM_INT);
+        $countSt->bindValue(':pid2', $parentId, \PDO::PARAM_INT);
+        $countSt->execute();
+        $totalDeleted = (int)$countSt->fetchColumn();
+
+        // Get the series name from the parent for the log.
+        $parentEvent = self::getEventById($parentId);
+        $seriesName  = $parentEvent ? ($parentEvent['name'] ?? '') : ($event['name'] ?? '');
+
+        // Delete the parent — FK ON DELETE CASCADE removes all children automatically.
+        $st = pdo()->prepare('DELETE FROM events WHERE id = :pid');
+        $st->bindValue(':pid', $parentId, \PDO::PARAM_INT);
+        $st->execute();
+
+        ActivityLog::log($ctx, 'event.delete_series', [
+            'parent_event_id' => $parentId,
+            'club_id'         => $clubId,
+            'name'            => $seriesName,
+            'events_deleted'  => $totalDeleted,
         ]);
     }
 

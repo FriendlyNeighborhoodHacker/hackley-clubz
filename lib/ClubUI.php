@@ -32,11 +32,19 @@ class ClubUI
         bool   $isMember   = false,
         string $clubName   = ''
     ): array {
+        // Trusted, code-generated SVG icon HTML — not from user input.
+        $icons = [
+            'info'     => '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#038BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+            'events'   => '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6B47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+            'members'  => '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+            'settings' => '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>',
+        ];
+
         $all = [
-            'info'     => ['label' => '🏠 Info Page',  'href' => '/clubs/view.php?id='          . $clubId],
-            'events'   => ['label' => '📅 Events',     'href' => '/clubs/events/index.php?id='  . $clubId],
-            'members'  => ['label' => '👑 Members',    'href' => '/clubs/members.php?id='       . $clubId],
-            'settings' => ['label' => '⚙️ Settings',   'href' => '/clubs/settings.php?id='      . $clubId],
+            'info'     => ['label' => 'Club Info', 'icon_html' => $icons['info'],     'href' => '/clubs/view.php?id='          . $clubId],
+            'members'  => ['label' => 'Members',   'icon_html' => $icons['members'],  'href' => '/clubs/members.php?id='       . $clubId],
+            'events'   => ['label' => 'Events',    'icon_html' => $icons['events'],   'href' => '/clubs/events/index.php?id='  . $clubId],
+            'settings' => ['label' => 'Settings',  'icon_html' => $icons['settings'], 'href' => '/clubs/settings.php?id='      . $clubId],
         ];
 
         $items = [];
@@ -50,15 +58,17 @@ class ClubUI
                 continue;
             }
             $items[] = [
-                'label'  => $item['label'],
-                'href'   => $item['href'],
-                'active' => ($key === $activePage),
+                'label'     => $item['label'],
+                'icon_html' => $item['icon_html'] ?? '',
+                'href'      => $item['href'],
+                'active'    => ($key === $activePage),
             ];
         }
 
         if ($isMember) {
             $items[] = [
-                'label'            => '🚪 Leave Club',
+                'label'            => 'Leave Club',
+                'icon_html'        => '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
                 'href'             => '#',
                 'active'           => false,
                 'separator_before' => true,
@@ -262,7 +272,9 @@ class ClubUI
               min-width:180px; z-index:50; overflow:hidden;">
     <?php foreach ($items as $item): ?>
       <a href="<?= $h((string)($item['href'] ?? '')) ?>"
-         class="admin-panel-link<?= !empty($item['active']) ? ' active' : '' ?>">
+         class="admin-panel-link<?= !empty($item['active']) ? ' active' : '' ?>"
+         style="display:flex; align-items:center; gap:7px;">
+        <?php if (!empty($item['icon_html'])): ?><span style="display:inline-flex;flex-shrink:0;"><?= $item['icon_html'] ?></span><?php endif; ?>
         <?= $h((string)($item['label'] ?? '')) ?>
       </a>
     <?php endforeach; ?>
