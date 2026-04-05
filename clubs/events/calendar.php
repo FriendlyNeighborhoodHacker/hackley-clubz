@@ -286,3 +286,150 @@ ob_start();
           showAreaError(area, data.error);
           if (btn) btn.disabled = false;
         }
+      })
+      .catch(() => { if (btn) btn.disabled = false; });
+  };
+
+  // ── Celebration burst ────────────────────────────────────────────────────
+  function rsvpCelebrate(btn, cx, cy) {
+    if (btn) {
+      const r = btn.getBoundingClientRect();
+      cx = r.left + r.width  / 2;
+      cy = r.top  + r.height / 2;
+    }
+
+    for (let i = 0; i < 18; i++) {
+      const dot   = document.createElement('div');
+      const angle = (i / 18) * 2 * Math.PI;
+      const dist  = 34 + Math.random() * 30;
+      const dx    = Math.cos(angle) * dist;
+      const dy    = Math.sin(angle) * dist;
+      const size  = 5 + Math.random() * 5;
+      dot.style.cssText =
+        'position:fixed;border-radius:50%;pointer-events:none;z-index:9999;'
+        + `width:${size}px;height:${size}px;`
+        + `left:${cx}px;top:${cy}px;`
+        + 'transform:translate(-50%,-50%);background:#22c55e;opacity:1;'
+        + 'transition:transform 580ms cubic-bezier(.15,.8,.25,1),'
+        + 'opacity 580ms ease-out;will-change:transform,opacity;';
+      document.body.appendChild(dot);
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        dot.style.transform = `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
+        dot.style.opacity   = '0';
+      }));
+      setTimeout(() => dot.remove(), 640);
+    }
+
+    const ring = document.createElement('div');
+    ring.style.cssText =
+      'position:fixed;border-radius:50%;pointer-events:none;z-index:9998;'
+      + `left:${cx}px;top:${cy}px;`
+      + 'transform:translate(-50%,-50%) scale(1);'
+      + 'width:6px;height:6px;border:2px solid #22c55e;opacity:.9;'
+      + 'transition:transform 500ms ease-out,opacity 500ms ease-out;';
+    document.body.appendChild(ring);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      ring.style.transform = 'translate(-50%,-50%) scale(13)';
+      ring.style.opacity   = '0';
+    }));
+    setTimeout(() => ring.remove(), 540);
+  }
+
+  // ── Modal ────────────────────────────────────────────────────────────────
+  window.rsvpOpenModal = function (eventId, currentAnswer) {
+    _modalEventId  = eventId;
+    _modalSelected = currentAnswer;
+
+    const errEl = document.getElementById('rsvp-modal-error');
+    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+
+    ['yes', 'maybe', 'no'].forEach(a => setModalBtnStyle(a, a === currentAnswer));
+    document.getElementById('rsvp-modal').style.display = 'flex';
+  };
+
+  window.rsvpModalSelect = function (answer) {
+    _modalSelected = answer;
+    ['yes', 'maybe', 'no'].forEach(a => setModalBtnStyle(a, a === answer));
+    if (answer === 'yes') {
+      const yesBtnEl = document.getElementById('rsvp-modal-btn-yes');
+      if (yesBtnEl) rsvpCelebrate(yesBtnEl);
+    }
+  };
+
+  window.rsvpModalClose = function () {
+    const modal = document.getElementById('rsvp-modal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  window.rsvpModalSave = function () {
+    if (!_modalEventId || !_modalSelected) return;
+    const saveBtn = document.getElementById('rsvp-modal-save');
+    if (saveBtn) saveBtn.disabled = true;
+
+    fetchRsvp(_modalEventId, _modalSelected)
+      .then(data => {
+        if (saveBtn) saveBtn.disabled = false;
+        if (data.success) {
+          rsvpModalClose();
+          const area = document.getElementById('rsvp-area-' + _modalEventId);
+          if (area) area.innerHTML = data.html;
+        } else {
+          const errEl = document.getElementById('rsvp-modal-error');
+          if (errEl) {
+            errEl.textContent = data.error || 'Something went wrong.';
+            errEl.style.display = 'block';
+          }
+        }
+      })
+      .catch(() => { if (saveBtn) saveBtn.disabled = false; });
+  };
+
+  document.getElementById('rsvp-modal').addEventListener('click', function (e) {
+    if (e.target === this) rsvpModalClose();
+  });
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  function fetchRsvp(eventId, answer) {
+    return fetch(RSVP_ENDPOINT, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    new URLSearchParams({
+        event_id:    eventId,
+        answer:      answer,
+        _csrf_token: RSVP_CSRF,
+      }),
+    }).then(r => r.json());
+  }
+
+  function showAreaError(area, message) {
+    let errEl = area.querySelector('.rsvp-inline-error');
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.className = 'rsvp-inline-error';
+      errEl.style.cssText = 'color:var(--error,#ef4444);font-size:12px;margin-bottom:6px;';
+      area.prepend(errEl);
+    }
+    errEl.textContent = message || 'Something went wrong.';
+  }
+
+  function setModalBtnStyle(answer, active) {
+    const btn = document.getElementById('rsvp-modal-btn-' + answer);
+    if (!btn) return;
+    const col = RSVP_ANSWER_COLORS[answer] || 'var(--coral)';
+    if (active) {
+      btn.style.background  = col;
+      btn.style.color       = '#fff';
+      btn.style.borderColor = col;
+    } else {
+      btn.style.background  = 'transparent';
+      btn.style.color       = 'var(--coral)';
+      btn.style.borderColor = 'var(--coral)';
+    }
+  }
+
+})();
+</script>
+
+<?php
+$content = ob_get_clean();
+include __DIR__ . '/../../templates/layout.php';
